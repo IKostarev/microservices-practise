@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"users/config"
 	"users/internal/models"
 	"users/pkg/jwtutil"
 
@@ -15,30 +16,21 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-// конфигурация создания пароля, пока что будет здесь
-type PasswordConfig struct {
-	time    uint32
-	memory  uint32
-	threads uint8
-	keyLen  uint32
-}
-
 type UserService struct {
-	passConfig *PasswordConfig
+	passConfig *config.PasswordConfig
 	userRepo   UserRepository
-	jwtUtil    jwtutil.JWTUtil
+	jwtUtil    *jwtutil.JWTUtil
 }
 
-func NewUserService(userRepo UserRepository, util jwtutil.JWTUtil) *UserService {
+func NewUserService(
+	passwordConfig *config.PasswordConfig,
+	userRepo UserRepository,
+	util *jwtutil.JWTUtil,
+) *UserService {
 	return &UserService{
-		passConfig: &PasswordConfig{
-			time:    1,
-			memory:  64 * 1024,
-			threads: 4,
-			keyLen:  32,
-		},
-		userRepo: userRepo,
-		jwtUtil:  util,
+		passConfig: passwordConfig,
+		userRepo:   userRepo,
+		jwtUtil:    util,
 	}
 }
 
@@ -161,20 +153,20 @@ func (s *UserService) GetUserByID(ctx context.Context, userID int) (*models.User
 }
 
 // GeneratePassword создает пароль на основе библиотеки golang.org/x/crypto/argon2
-func GeneratePassword(c *PasswordConfig, password string) (string, error) {
+func GeneratePassword(c *config.PasswordConfig, password string) (string, error) {
 	salt := make([]byte, 16)
 	if _, err := rand.Read(salt); err != nil {
 		return "", err
 	}
 
-	hash := argon2.IDKey([]byte(password), salt, c.time, c.memory, c.threads, c.keyLen)
+	hash := argon2.IDKey([]byte(password), salt, c.Time, c.Memory, c.Threads, c.KeyLen)
 
 	// Base64 encode the salt and hashed password.
 	b64Salt := base64.RawStdEncoding.EncodeToString(salt)
 	b64Hash := base64.RawStdEncoding.EncodeToString(hash)
 
 	format := "$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s"
-	full := fmt.Sprintf(format, argon2.Version, c.memory, c.time, c.threads, b64Salt, b64Hash)
+	full := fmt.Sprintf(format, argon2.Version, c.Memory, c.Time, c.Threads, b64Salt, b64Hash)
 	return full, nil
 }
 
@@ -183,8 +175,8 @@ func ComparePassword(password, hash string) (bool, error) {
 
 	parts := strings.Split(hash, "$")
 
-	c := &PasswordConfig{}
-	_, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &c.memory, &c.time, &c.threads)
+	c := &config.PasswordConfig{}
+	_, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &c.Memory, &c.Time, &c.Threads)
 	if err != nil {
 		return false, err
 	}
@@ -198,9 +190,9 @@ func ComparePassword(password, hash string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	c.keyLen = uint32(len(decodedHash))
+	c.KeyLen = uint32(len(decodedHash))
 
-	comparisonHash := argon2.IDKey([]byte(password), salt, c.time, c.memory, c.threads, c.keyLen)
+	comparisonHash := argon2.IDKey([]byte(password), salt, c.Time, c.Memory, c.Threads, c.KeyLen)
 
 	return subtle.ConstantTimeCompare(decodedHash, comparisonHash) == 1, nil
 }

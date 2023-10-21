@@ -9,9 +9,9 @@ import (
 )
 
 type JWTUtil struct {
-	SecretKey       string
-	AccessTokenExp  time.Duration
-	RefreshTokenExp time.Duration
+	SecretKey       string        `envconfig:"SECRET_KEY" required:"true" default:"superSecretKey"`
+	AccessTokenExp  time.Duration `envconfig:"ACCESS_TOKEN_EXP" required:"true" default:"15m"`
+	RefreshTokenExp time.Duration `envconfig:"REFRESH_TOKEN_EXP" required:"true" default:"24h"`
 }
 
 func (ju *JWTUtil) GenerateAccessToken(userID int) (string, error) {

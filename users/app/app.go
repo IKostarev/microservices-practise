@@ -1,22 +1,28 @@
 package app
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
+	"users/config"
 	"users/internal/handlers"
 	"users/internal/service"
 	"users/pkg/jwtutil"
 )
 
 type App struct {
+	cfg         *config.Config
 	router      *mux.Router
 	userService handlers.UserService
 }
 
-func NewApp() (*App, error) {
-	userService := service.NewUserService(nil, jwtutil.JWTUtil{})
+func NewApp(
+	cfg *config.Config,
+) (*App, error) {
+	userService := service.NewUserService(&cfg.Password, nil, &jwtutil.JWTUtil{})
 
 	return &App{
+		cfg:         cfg,
 		userService: userService,
 	}, nil
 }
@@ -47,5 +53,7 @@ func (a *App) RunApp() {
 	a.router.HandleFunc("/users/verify", userHandler.Verify).Methods(http.MethodPost)
 
 	// запустить вебсервер по адресу, передать в него роутер
-	http.ListenAndServe(":8080", a.router)
+	appAddr := fmt.Sprintf("%s:%s", a.cfg.App.AppHost, a.cfg.App.AppPort) // добавлен
+	fmt.Println("starting server at ", appAddr)
+	http.ListenAndServe(appAddr, a.router)
 }

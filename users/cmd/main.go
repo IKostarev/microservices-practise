@@ -2,10 +2,13 @@ package main
 
 import (
 	"users/app"
+	"users/config"
 )
 
 func main() {
-	app, err := app.NewApp()
+	cfg := config.NewFromEnv()
+
+	app, err := app.NewApp(cfg)
 	if err != nil {
 		panic(err)
 	}

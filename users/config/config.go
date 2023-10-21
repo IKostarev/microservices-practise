@@ -3,12 +3,14 @@ package config
 import (
 	"github.com/kelseyhightower/envconfig"
 	"users/pkg/jwtutil"
+	"users/pkg/logging"
 )
 
 type Config struct {
-	App      App             `envconfig:"APP"`
-	JWT      jwtutil.JWTUtil `envconfig:"JWT"`
-	Password PasswordConfig  `envconfig:"PASS"`
+	App      App                  `envconfig:"APP"`
+	JWT      jwtutil.JWTUtil      `envconfig:"JWT"`
+	Password PasswordConfig       `envconfig:"PASS"`
+	Logging  logging.LoggerConfig `envconfig:"LOG"`
 }
 
 type App struct {
@@ -16,7 +18,6 @@ type App struct {
 	AppPort string `envconfig:"APP_PORT" required:"true" default:"8000"`
 }
 
-// перенесено из users/internal/service/service.go
 type PasswordConfig struct {
 	Time    uint32 `envconfig:"PASS_TIME" required:"true" default:"1"`
 	Memory  uint32 `envconfig:"PASS_MEMORY" required:"true" default:"65536"`

@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog"
 	"net/http"
 	"users/config"
 	"users/internal/handlers"
@@ -12,24 +13,27 @@ import (
 
 type App struct {
 	cfg         *config.Config
+	logger      *zerolog.Logger
 	router      *mux.Router
 	userService handlers.UserService
 }
 
 func NewApp(
 	cfg *config.Config,
+	logger *zerolog.Logger,
 ) (*App, error) {
 	userService := service.NewUserService(&cfg.Password, nil, &jwtutil.JWTUtil{})
 
 	return &App{
 		cfg:         cfg,
+		logger:      logger,
 		userService: userService,
 	}, nil
 }
 
 func (a *App) RunApp() {
 	// инициализируем хэндлер
-	userHandler := handlers.NewUserHandler(a.userService)
+	userHandler := handlers.NewUserHandler(a.logger, a.userService)
 
 	// инициализация роутера и сохранение его в соотвтетсвующее поле приложения
 	a.router = mux.NewRouter()
@@ -54,6 +58,6 @@ func (a *App) RunApp() {
 
 	// запустить вебсервер по адресу, передать в него роутер
 	appAddr := fmt.Sprintf("%s:%s", a.cfg.App.AppHost, a.cfg.App.AppPort) // добавлен
-	fmt.Println("starting server at ", appAddr)
+	a.logger.Info().Msgf("running server at '%s'", appAddr)
 	http.ListenAndServe(appAddr, a.router)
 }

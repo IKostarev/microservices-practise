@@ -34,12 +34,16 @@ func (h *UserHandler) JSONErrorRespond(w http.ResponseWriter, httpCode int, err 
 
 	rawData, marshalErr := json.Marshal(data)
 	if marshalErr != nil {
-		h.JSONErrorRespond(w, http.StatusInternalServerError, NewApiError("can't encode response to json", ErrCodeInvalidJsonFormat))
+		h.logger.Error().Msgf("[JSONErrorRespond] marshal:%s", err)
+		h.JSONErrorRespond(w, http.StatusInternalServerError, NewApiError("marshal to json", ErrCodeInvalidJsonFormat))
 	}
 
 	w.WriteHeader(httpCode)
 
-	_, _ = w.Write(rawData)
+	_, writeErr := w.Write(rawData)
+	if writeErr != nil {
+		h.logger.Error().Msgf("[JSONErrorRespond] write response:%s", writeErr)
+	}
 }
 
 func (h *UserHandler) JSONSuccessRespond(w http.ResponseWriter, data interface{}) {
@@ -56,6 +60,7 @@ func (h *UserHandler) JSONSuccessRespond(w http.ResponseWriter, data interface{}
 	rawData, marshalErr := json.Marshal(data)
 	if marshalErr != nil {
 		// если возникла ошибка, связанная с маршаллингом, вернем код 500
+		h.logger.Error().Msgf("[JSONSuccessRespond] marshal:%s", marshalErr)
 		h.JSONErrorRespond(w, http.StatusInternalServerError, NewApiError(marshalErr.Error(), ErrCodeInvalidJsonFormat))
 		return
 	}
@@ -63,5 +68,8 @@ func (h *UserHandler) JSONSuccessRespond(w http.ResponseWriter, data interface{}
 	// установим статус 200
 	w.WriteHeader(http.StatusOK)
 
-	_, _ = w.Write(rawData)
+	_, writeErr := w.Write(rawData)
+	if writeErr != nil {
+		h.logger.Error().Msgf("[JSONSuccessRespond] write response:%s", writeErr)
+	}
 }

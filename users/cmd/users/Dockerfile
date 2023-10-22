@@ -12,7 +12,6 @@ ENV LOG_TO_FILE=false
 
 # копируем файлы приложения в рабочую папку образа
 COPY app /build/app
-COPY app /build/app
 COPY cmd /build/cmd
 COPY config /build/config
 COPY internal /build/internal

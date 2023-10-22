@@ -9,6 +9,7 @@ import (
 	"users/internal/handlers"
 	"users/internal/service"
 	"users/pkg/jwtutil"
+	"users/pkg/logging"
 )
 
 type App struct {
@@ -20,9 +21,10 @@ type App struct {
 
 func NewApp(
 	cfg *config.Config,
-	logger *zerolog.Logger,
 ) (*App, error) {
 	userService := service.NewUserService(&cfg.Password, nil, &jwtutil.JWTUtil{})
+
+	logger := logging.NewLogger(cfg.Logging)
 
 	return &App{
 		cfg:         cfg,

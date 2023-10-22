@@ -8,8 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	appErrors "users/app_errors"
 	"users/config"
+	appErrors "users/internal/app_errors"
 	"users/internal/models"
 	"users/pkg/jwtutil"
 

@@ -5,10 +5,10 @@ services:
       context: ./users
       dockerfile: ./Dockerfile
     ports:
-      - "3000:3000"
+      - "3001:3000"
     depends_on:
       - postgres
-#  todo:
+  #  todo:
 #    build:
 #      context: ./todo
 #      dockerfile: ./Dockerfile
@@ -20,21 +20,12 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_PORT: 5432
+      POSTGRES_PORT: 5431
     ports:
-      - "5432:5432"
+      - "5431:5432"
   migrate:
     build:
       context: ./users
+      dockerfile: ./cmd/migrations/Dockerfile
     depends_on:
       - postgres
-    volumes:
-      - "../migrations:/migrations"
-    environment:
-      - CGO_ENABLED=1
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_HOST=localhost
-      - POSTGRES_PORT=5432
-      - POSTGRES_DBNAME=postgres
-    entrypoint: ["/bin/migrations_bin"]

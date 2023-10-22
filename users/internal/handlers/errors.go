@@ -38,9 +38,11 @@ func (e *ApiError) As(target interface{}) bool {
 }
 
 var (
-	ErrInternalApi = NewApiError("an error occurred while processing the request", ErrCodeInternalAPIError)
-	ErrBadRequest  = NewApiError("bad request", ErrCodeBadRequest)
-	ErrNotFound    = NewApiError("not found", ErrCodeNotFound)
+	ErrInternalApi                = NewApiError("an error occurred while processing the request", ErrCodeInternalAPIError)
+	ErrBadRequest                 = NewApiError("bad request", ErrCodeBadRequest)
+	ErrUsernameOrEmailAlreadyUsed = NewApiError("username or email already used", ErrCodeBadRequest)
+	ErrWrongCredentials           = NewApiError("wrong credentials", ErrCodeBadRequest)
+	ErrNotFound                   = NewApiError("not found", ErrCodeNotFound)
 )
 
 func (e *ApiError) IsRequestValidationError() bool {

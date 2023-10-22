@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"users/config"
 	"users/internal/handlers"
+	"users/internal/repository"
 	"users/internal/service"
-	"users/pkg/jwtutil"
 	"users/pkg/logging"
+	"users/pkg/postgresql"
 )
 
 type App struct {
@@ -22,7 +23,17 @@ type App struct {
 func NewApp(
 	cfg *config.Config,
 ) (*App, error) {
-	userService := service.NewUserService(&cfg.Password, nil, &jwtutil.JWTUtil{})
+	// подключимся к базе данных
+	databaseConn, err := postgresql.NewPgxConn(&cfg.Postgres)
+	if err != nil {
+		return nil, fmt.Errorf("connect to database: %w", err)
+	}
+
+	// передадим подключение к базе данных констуктору репозитория
+	userRepo := repository.NewUserRepository(databaseConn)
+
+	// передадим реализацию репозитория конструктору сервиса
+	userService := service.NewUserService(&cfg.Password, userRepo, &cfg.JWT)
 
 	logger := logging.NewLogger(cfg.Logging)
 

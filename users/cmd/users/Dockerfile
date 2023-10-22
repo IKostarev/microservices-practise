@@ -9,6 +9,14 @@ ENV APP_PORT=3000
 ENV LOG_INDEX=users
 ENV LOG_IS_DEBUG=false
 ENV LOG_TO_FILE=false
+ENV LOG_TO_FILE=false
+
+ENV POSTGRES_HOST=postgres
+ENV POSTGRES_PORT=5432
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_PASSWORD=postgres
+ENV POSTGRES_DBNAME=postgres
+
 
 # копируем файлы приложения в рабочую папку образа
 COPY app /build/app
@@ -33,3 +41,9 @@ ENTRYPOINT ["cmd/users/users"]
 
 # открываем порты из образа
 EXPOSE 3000/tcp
+
+POSTGRES_HOST=postgres;
+POSTGRES_PORT=5431;
+POSTGRES_USER=postgres;
+POSTGRES_PASSWORD=postgres;
+POSTGRES_DBNAME=postgres;

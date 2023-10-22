@@ -1,0 +1,8 @@
+### Send POST request with json body
+POST http://localhost:3000/users/verify
+Content-Type: application/json
+
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2OTc5ODUwNjEsInVzZXJfaWQiOjF9.-87vO3EMfVoBCH0iIC8DQUJc7cQWI3aq2xEUrJYi_g0"
+}
+

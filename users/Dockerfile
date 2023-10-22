@@ -6,6 +6,9 @@ WORKDIR /build
 
 # установим переменные среды
 ENV APP_PORT=3000
+ENV LOG_INDEX=users
+ENV LOG_IS_DEBUG=false
+ENV LOG_TO_FILE=false
 
 # копируем файлы приложения в рабочую папку образа
 COPY app /build/app

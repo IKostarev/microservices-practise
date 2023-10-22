@@ -32,7 +32,7 @@ func (ju *JWTUtil) generateToken(userID int, secret string, duration time.Durati
 	claims["user_id"] = userID
 	claims["exp"] = time.Now().Add(duration).Unix()
 
-	tokenString, err := token.SignedString(secret)
+	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
 		return "", err
 	}
@@ -45,7 +45,7 @@ func (ju *JWTUtil) verifyToken(tokenString string) (int, error) {
 		if token.Method != jwt.SigningMethodHS256 {
 			return nil, fmt.Errorf("Unexpected signing method")
 		}
-		return ju.SecretKey, nil
+		return []byte(ju.SecretKey), nil
 	})
 
 	if err != nil {
@@ -57,12 +57,12 @@ func (ju *JWTUtil) verifyToken(tokenString string) (int, error) {
 		return 0, fmt.Errorf("token is not valid")
 	}
 
-	exp := claims["exp"].(int64)
+	exp := int64(claims["exp"].(float64))
 	if time.Unix(exp, 0).Before(time.Now()) {
 		return 0, errors.New("token has expired")
 	}
 
-	userID := claims["user_id"].(int)
+	userID := int(claims["user_id"].(float64))
 
 	return userID, nil
 }

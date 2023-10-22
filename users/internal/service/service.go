@@ -37,10 +37,10 @@ func NewUserService(
 
 func (s *UserService) RegisterUser(ctx context.Context, newUser *models.CreateUserDTO) (int, error) {
 	// Проверка наличия пользователя с таким же именем или мэйлом.
-	_, err := s.userRepo.GetUserByUsernameAndPassword(ctx, newUser.Username, newUser.Email)
+	_, err := s.userRepo.GetUserByUsernameOrEmail(ctx, newUser.Username, newUser.Email)
 	if err == nil {
 		return 0, fmt.Errorf("[RegisterUser] get user: %w", appErrors.ErrUsernameOrEmailIsUsed)
-	} else if !errors.Is(err, sql.ErrNoRows) {
+	} else if !errors.As(err, &sql.ErrNoRows) {
 		return 0, err
 	}
 
@@ -140,6 +140,9 @@ func (s *UserService) GetUserByID(ctx context.Context, userID int) (*models.User
 	var userResponse = new(models.UserDTO)
 	storedUser, err := s.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
+		if errors.As(err, &sql.ErrNoRows) {
+			return nil, appErrors.ErrNotFound
+		}
 		return userResponse, fmt.Errorf("[GetUserByID] get user:%w", err)
 	}
 
@@ -200,9 +203,12 @@ func ComparePassword(password, hash string) (bool, error) {
 
 func (s *UserService) Login(ctx context.Context, login *models.UserLoginDTO) (*models.UserTokens, error) {
 	// Проверка наличия пользователя.
-	existingUser, err := s.userRepo.GetUserByUsernameAndPassword(ctx, login.Username, login.Password)
+	existingUser, err := s.userRepo.GetUserByUsernameOrEmail(ctx, login.Username, login.Email)
 	if err != nil {
-		return nil, fmt.Errorf("[Login] get user:%w", err)
+		if errors.As(err, &sql.ErrNoRows) {
+			return nil, appErrors.ErrWrongCredentials
+		}
+		return nil, fmt.Errorf("[Login] get user: %w", err)
 	}
 
 	// Проверка пароля.
@@ -211,7 +217,7 @@ func (s *UserService) Login(ctx context.Context, login *models.UserLoginDTO) (*m
 		return nil, fmt.Errorf("[Login] verify pass:%w", err)
 	}
 	if !passMatch {
-		return nil, fmt.Errorf("[Login] verify pass:%w", appErrors.ErrWrongPassword)
+		return nil, fmt.Errorf("[Login] verify pass:%w", appErrors.ErrWrongCredentials)
 	}
 
 	// Генерируем токены и возвращаем

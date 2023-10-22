@@ -1,0 +1,27 @@
+### Send POST request with json body
+POST http://localhost:3000/users/login
+Content-Type: application/json
+
+{
+  "username": "epopov",
+  "password": "epopov"
+}
+
+### Send POST request with json body
+POST http://localhost:3000/users/login
+Content-Type: application/json
+
+{
+  "username": "eppopov",
+  "password": "eppopov"
+}
+
+### Send POST request with json body
+POST http://localhost:3000/users/login
+Content-Type: application/json
+
+{
+  "username": "epopov",
+  "password": "eppopov"
+}
+

@@ -14,6 +14,18 @@ func (h *UserHandler) ErrorBadRequest(w http.ResponseWriter) {
 	h.JSONErrorRespond(w, http.StatusBadRequest, ErrBadRequest)
 }
 
+func (h *UserHandler) ErrorUsernameOrEmailAlreadyUsed(w http.ResponseWriter) {
+	h.JSONErrorRespond(w, http.StatusBadRequest, ErrUsernameOrEmailAlreadyUsed)
+}
+
+func (h *UserHandler) ErrorWrongCredentials(w http.ResponseWriter) {
+	h.JSONErrorRespond(w, http.StatusBadRequest, ErrWrongCredentials)
+}
+
+func (h *UserHandler) ErrorNotFound(w http.ResponseWriter) {
+	h.JSONErrorRespond(w, http.StatusNotFound, ErrNotFound)
+}
+
 func (h *UserHandler) ErrorInternalApi(w http.ResponseWriter) {
 	h.JSONErrorRespond(w, http.StatusInternalServerError, ErrInternalApi)
 }

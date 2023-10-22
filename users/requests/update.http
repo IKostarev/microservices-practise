@@ -1,0 +1,9 @@
+### Send PUT request with json body
+PUT http://localhost:3000/users/update
+Content-Type: application/json
+
+{
+  "id": 1,
+  "username": "popov"
+}
+

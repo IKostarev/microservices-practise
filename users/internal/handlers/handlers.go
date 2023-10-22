@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 	"net/http"
 	"strconv"
+	appErrors "users/internal/app_errors"
 	"users/internal/models"
 )
 
@@ -37,6 +39,11 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	// передаем данные в слой сервиса
 	userID, err := h.userService.RegisterUser(ctx, newUser)
 	if err != nil {
+		if errors.As(err, &appErrors.ErrUsernameOrEmailIsUsed) {
+			h.ErrorUsernameOrEmailAlreadyUsed(w)
+			return
+		}
+
 		h.logger.Error().Msgf("[RegisterUser] register:%s", err)
 		h.ErrorInternalApi(w)
 		return
@@ -64,6 +71,11 @@ func (h *UserHandler) GetGetUserById(w http.ResponseWriter, r *http.Request) {
 	// передаем данные в слой сервиса
 	user, err := h.userService.GetUserByID(ctx, userID)
 	if err != nil {
+		if errors.As(err, &appErrors.ErrNotFound) {
+			h.ErrorNotFound(w)
+			return
+		}
+
 		h.logger.Error().Msgf("[GetGetUserById] get user:%s", err)
 		h.ErrorInternalApi(w)
 		return
@@ -154,6 +166,11 @@ func (h *UserHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 
 	response, err := h.userService.Login(ctx, request)
 	if err != nil {
+		if errors.As(err, &appErrors.ErrWrongCredentials) {
+			h.ErrorWrongCredentials(w)
+			return
+		}
+
 		h.logger.Error().Msgf("[UserLogin] login: %s", err)
 		h.ErrorInternalApi(w)
 		return

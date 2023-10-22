@@ -4,13 +4,19 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"users/pkg/jwtutil"
 	"users/pkg/logging"
+	"users/pkg/postgresql"
 )
 
 type Config struct {
-	App      App                  `envconfig:"APP"`
-	JWT      jwtutil.JWTUtil      `envconfig:"JWT"`
-	Password PasswordConfig       `envconfig:"PASS"`
-	Logging  logging.LoggerConfig `envconfig:"LOG"`
+	App      App                   `envconfig:"APP"`
+	JWT      jwtutil.JWTUtil       `envconfig:"JWT"`
+	Password PasswordConfig        `envconfig:"PASS"`
+	Logging  logging.LoggerConfig  `envconfig:"LOG"`
+	Postgres postgresql.PostgreSQL `envconfig:"POSTGRES"`
+}
+
+type MigrationsConfig struct {
+	Postgres postgresql.PostgreSQL `envconfig:"POSTGRES"`
 }
 
 type App struct {
@@ -27,6 +33,12 @@ type PasswordConfig struct {
 
 func NewFromEnv() *Config {
 	c := Config{}
+	envconfig.MustProcess("", &c)
+	return &c
+}
+
+func NewMigrationsFromEnv() *MigrationsConfig {
+	c := MigrationsConfig{}
 	envconfig.MustProcess("", &c)
 	return &c
 }

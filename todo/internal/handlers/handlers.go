@@ -45,12 +45,17 @@ func (h *TodoHandler) CreateToDoHandler(w http.ResponseWriter, r *http.Request) 
 func (h *TodoHandler) GetToDoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	todoID := uuid.Must(uuid.FromBytes([]byte(mux.Vars(r)["id"])))
+	todoID, err := uuid.Parse(mux.Vars(r)["id"])
+	if err != nil {
+		h.JSONErrorRespond(w, BadRequest, "[GetToDoHandler] error parse uuid")
+		return
+	}
 
 	todo, err := h.todoService.GetToDo(ctx, todoID)
 	if err != nil {
 		// TODO обработать все возможные ошибки
 		h.JSONErrorRespond(w, InternalServerError, "[GetToDoHandler] error get todo")
+		return
 	}
 
 	h.JSONSuccessRespond(w, OK, todo)

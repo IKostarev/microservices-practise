@@ -32,8 +32,8 @@ func (a *App) RunAPI() {
 	r := a.router.PathPrefix("/api/v1/todos").Subrouter()
 
 	r.HandleFunc("/", todoHandler.CreateToDoHandler).Methods(http.MethodPost)
-	r.HandleFunc("/{id}", todoHandler.GetToDoHandler).Methods(http.MethodGet)
 	r.HandleFunc("/batch", todoHandler.GetToDosHandler).Methods(http.MethodGet)
+	r.HandleFunc("/{id}", todoHandler.GetToDoHandler).Methods(http.MethodGet)
 	r.HandleFunc("/{id}", todoHandler.UpdateToDoHandler).Methods(http.MethodPut)
 	r.HandleFunc("/{id}", todoHandler.DeleteToDoHandler).Methods(http.MethodDelete)
 

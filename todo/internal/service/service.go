@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/uuid"
-	"math/rand"
 	"time"
 	"todo/internal/models"
 )
@@ -33,8 +32,8 @@ func (s *TodoService) CreateToDo(ctx context.Context, newTodo *models.TodoDTO) (
 
 	m := &models.TodoDAO{
 		ID:          uuid.New(),
-		CreatedBy:   rand.Intn(10),
-		Assignee:    rand.Intn(15),
+		CreatedBy:   newTodo.CreatedBy,
+		Assignee:    newTodo.Assignee,
 		Description: newTodo.Description,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),

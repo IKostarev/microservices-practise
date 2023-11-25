@@ -27,8 +27,7 @@ func NewTodoService(userRepo TodoRepository) *TodoService {
 }
 
 func (s *TodoService) CreateToDo(ctx context.Context, newTodo *models.TodoDTO) (*models.TodoDTO, error) {
-	context, cancel := context.WithTimeout(ctx, time.Minute*10)
-	defer cancel()
+	context, _ := context.WithTimeout(ctx, time.Second*3)
 
 	m := &models.TodoDAO{
 		ID:          uuid.New(),
@@ -41,15 +40,14 @@ func (s *TodoService) CreateToDo(ctx context.Context, newTodo *models.TodoDTO) (
 
 	createResult, err := s.userRepo.CreateToDo(context, m)
 	if err != nil {
-		return nil, fmt.Errorf("[CreateToDo] error create is - %w\n", err)
+		return nil, fmt.Errorf("[CreateToDo] create - %w\n", err)
 	}
 
 	return (*models.TodoDTO)(createResult), nil
 }
 
 func (s *TodoService) UpdateToDo(ctx context.Context, newTodo *models.TodoDTO) (*models.TodoDTO, error) {
-	context, cancel := context.WithTimeout(ctx, time.Minute*10)
-	defer cancel()
+	context, _ := context.WithTimeout(ctx, time.Second*3)
 
 	m := &models.TodoDAO{
 		ID:          newTodo.ID,
@@ -62,19 +60,18 @@ func (s *TodoService) UpdateToDo(ctx context.Context, newTodo *models.TodoDTO) (
 
 	updateResult, err := s.userRepo.UpdateToDo(context, m)
 	if err != nil {
-		return nil, fmt.Errorf("[UpdateToDo] error update is - %w\n", err)
+		return nil, fmt.Errorf("[UpdateToDo] update - %w\n", err)
 	}
 
 	return (*models.TodoDTO)(updateResult), nil
 }
 
 func (s *TodoService) GetToDos(ctx context.Context) ([]models.TodoDTO, error) {
-	context, cancel := context.WithTimeout(ctx, time.Minute*10)
-	defer cancel()
+	context, _ := context.WithTimeout(ctx, time.Second*3)
 
 	list, err := s.userRepo.GetToDos(context)
 	if err != nil {
-		return nil, fmt.Errorf("[GetToDos] error get todos is - %w\n", err)
+		return nil, fmt.Errorf("[GetToDos] get todos - %w\n", err)
 	}
 
 	result := make([]models.TodoDTO, 0, len(list))
@@ -95,23 +92,21 @@ func (s *TodoService) GetToDos(ctx context.Context) ([]models.TodoDTO, error) {
 }
 
 func (s *TodoService) GetToDo(ctx context.Context, todoID uuid.UUID) (*models.TodoDTO, error) {
-	context, cancel := context.WithTimeout(ctx, time.Minute*10)
-	defer cancel()
+	context, _ := context.WithTimeout(ctx, time.Second*3)
 
 	todo, err := s.userRepo.GetToDo(context, todoID)
 	if err != nil {
-		return nil, fmt.Errorf("[GetToDo] error get todo is - %w", err)
+		return nil, fmt.Errorf("[GetToDo] get todo - %w", err)
 	}
 
 	return (*models.TodoDTO)(todo), nil
 }
 
 func (s *TodoService) DeleteToDo(ctx context.Context, todoID uuid.UUID) error {
-	context, cancel := context.WithTimeout(ctx, time.Minute*10)
-	defer cancel()
+	context, _ := context.WithTimeout(ctx, time.Second*3)
 
 	if err := s.userRepo.DeleteToDo(context, todoID); err != nil {
-		return fmt.Errorf("[DeleteToDo] error delete is - %w\n", err)
+		return fmt.Errorf("[DeleteToDo] delete - %w\n", err)
 	}
 
 	return nil

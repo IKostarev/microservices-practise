@@ -38,6 +38,6 @@ func (a *App) RunAPI() {
 	r.HandleFunc("/{id}", todoHandler.DeleteToDoHandler).Methods(http.MethodDelete)
 
 	if err := http.ListenAndServe(PORT, a.router); err != nil {
-		log.Fatalf("ListenAndServe error is - %w\n", err)
+		log.Fatalf("ListenAndServe error is - %s\n", err)
 	}
 }

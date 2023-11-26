@@ -1,8 +1,8 @@
 package app
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
-	"log"
 	"net/http"
 	"todo/internal/handlers"
 	"todo/internal/service"
@@ -38,6 +38,6 @@ func (a *App) RunAPI() {
 	r.HandleFunc("/{id}", todoHandler.DeleteToDoHandler).Methods(http.MethodDelete)
 
 	if err := http.ListenAndServe(PORT, a.router); err != nil {
-		log.Fatalf("ListenAndServe error is - %s\n", err)
+		fmt.Printf("ListenAndServe error is - %s\n", err)
 	}
 }

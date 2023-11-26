@@ -17,13 +17,9 @@ const (
 	InternalServerError int = http.StatusInternalServerError
 )
 
-func (h *TodoHandler) JSONErrorRespond(w http.ResponseWriter, httpCode int, errString string) {
+func (h *TodoHandler) JSONErrorRespond(w http.ResponseWriter, httpCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpCode)
-
-	if _, err := w.Write([]byte(errString)); err != nil {
-		_ = fmt.Errorf("[JSONErrorRespond] error is - %w\n", err)
-	}
 }
 
 func (h *TodoHandler) JSONSuccessRespond(w http.ResponseWriter, httpCode int, data interface{}) {
@@ -36,7 +32,8 @@ func (h *TodoHandler) JSONSuccessRespond(w http.ResponseWriter, httpCode int, da
 
 	jsonMarshal, err := json.Marshal(data)
 	if err != nil {
-		h.JSONErrorRespond(w, InternalServerError, "[JSONSuccessRespond] have error is marshal")
+		fmt.Println("[JSONSuccessRespond] have error is marshal")
+		h.JSONErrorRespond(w, InternalServerError)
 		return
 	}
 

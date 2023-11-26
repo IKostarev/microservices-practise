@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -23,15 +24,16 @@ func (h *TodoHandler) CreateToDoHandler(w http.ResponseWriter, r *http.Request) 
 
 	var newTodo = new(models.TodoDTO)
 	if err := json.NewDecoder(r.Body).Decode(&newTodo); err != nil {
-		h.JSONErrorRespond(w, BadRequest, "[CreateToDoHandler] error unmarshal")
+		fmt.Println("[CreateToDoHandler] error unmarshal")
+		h.JSONErrorRespond(w, BadRequest)
 		return
 	}
-	defer r.Body.Close()
 
 	todoID, err := h.todoService.CreateToDo(ctx, newTodo)
 	if err != nil {
 		// TODO обработать все возможные ошибки
-		h.JSONErrorRespond(w, InternalServerError, "[CreateToDoHandler] error create")
+		fmt.Println("[CreateToDoHandler] error create")
+		h.JSONErrorRespond(w, InternalServerError)
 		return
 	}
 
@@ -47,14 +49,16 @@ func (h *TodoHandler) GetToDoHandler(w http.ResponseWriter, r *http.Request) {
 
 	todoID, err := uuid.Parse(mux.Vars(r)["id"])
 	if err != nil {
-		h.JSONErrorRespond(w, BadRequest, "[GetToDoHandler] error parse uuid")
+		fmt.Println("[GetToDoHandler] error parse uuid")
+		h.JSONErrorRespond(w, BadRequest)
 		return
 	}
 
 	todo, err := h.todoService.GetToDo(ctx, todoID)
 	if err != nil {
 		// TODO обработать все возможные ошибки
-		h.JSONErrorRespond(w, InternalServerError, "[GetToDoHandler] error get todo")
+		fmt.Println("[GetToDoHandler] error get todo")
+		h.JSONErrorRespond(w, InternalServerError)
 		return
 	}
 
@@ -67,7 +71,8 @@ func (h *TodoHandler) GetToDosHandler(w http.ResponseWriter, r *http.Request) {
 	todos, err := h.todoService.GetToDos(ctx)
 	if err != nil {
 		// TODO обработать все возможные ошибки
-		h.JSONErrorRespond(w, InternalServerError, "[GetToDosHandler] error get ToDos")
+		fmt.Println("[GetToDosHandler] error get ToDos")
+		h.JSONErrorRespond(w, InternalServerError)
 		return
 	}
 
@@ -79,15 +84,16 @@ func (h *TodoHandler) UpdateToDoHandler(w http.ResponseWriter, r *http.Request) 
 
 	var updTodo = new(models.TodoDTO)
 	if err := json.NewDecoder(r.Body).Decode(&updTodo); err != nil {
-		h.JSONErrorRespond(w, BadRequest, "[UpdateToDoHandler] error unmarshal")
+		fmt.Println("[UpdateToDoHandler] error unmarshal")
+		h.JSONErrorRespond(w, BadRequest)
 		return
 	}
-	defer r.Body.Close()
 
 	resp, err := h.todoService.UpdateToDo(ctx, updTodo)
 	if err != nil {
 		// TODO обработать все возможные ошибки
-		h.JSONErrorRespond(w, InternalServerError, "[UpdateToDoHandler] error update todo")
+		fmt.Println("[UpdateToDoHandler] error update todo")
+		h.JSONErrorRespond(w, InternalServerError)
 		return
 	}
 
@@ -100,7 +106,8 @@ func (h *TodoHandler) DeleteToDoHandler(w http.ResponseWriter, r *http.Request) 
 	todoID := uuid.Must(uuid.FromBytes([]byte(mux.Vars(r)["id"])))
 
 	if err := h.todoService.DeleteToDo(ctx, todoID); err != nil {
-		h.JSONErrorRespond(w, InternalServerError, "[DeleteToDoHandler] error delete todo")
+		fmt.Println("[DeleteToDoHandler] error delete todo")
+		h.JSONErrorRespond(w, InternalServerError)
 		return
 	}
 

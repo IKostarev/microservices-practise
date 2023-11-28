@@ -4,22 +4,22 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
+	"todo/config"
 	"todo/internal/handlers"
 	"todo/internal/service"
 )
 
-// TODO перенести в конфиг
-const PORT = ":8080"
-
 type App struct {
+	cfg         *config.Config
 	router      *mux.Router
 	todoService handlers.TodoService
 }
 
-func NewApp() (*App, error) {
+func NewApp(cfg *config.Config) (*App, error) {
 	todoService := service.NewTodoService(nil)
 
 	return &App{
+		cfg:         cfg,
 		todoService: todoService,
 	}, nil
 }
@@ -37,7 +37,7 @@ func (a *App) RunAPI() {
 	r.HandleFunc("/{id}", todoHandler.UpdateToDoHandler).Methods(http.MethodPut)
 	r.HandleFunc("/{id}", todoHandler.DeleteToDoHandler).Methods(http.MethodDelete)
 
-	if err := http.ListenAndServe(PORT, a.router); err != nil {
+	if err := http.ListenAndServe(a.cfg.App.AppPort, a.router); err != nil {
 		fmt.Printf("ListenAndServe error is - %s\n", err)
 	}
 }

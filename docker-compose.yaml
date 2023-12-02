@@ -8,12 +8,12 @@ services:
       - "3000:3000"
     depends_on:
       - postgres
-  #  todo:
-#    build:
-#      context: ./todo
-#      dockerfile: ./Dockerfile
-#    ports:
-#      - "3001:3000"
+  todo:
+    build:
+      context: ./todo
+      dockerfile: ./cmd
+    ports:
+      - "3001:3000"
   postgres:
     image: postgres:15.2-alpine
     environment:

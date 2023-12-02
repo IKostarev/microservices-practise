@@ -2,10 +2,13 @@ package main
 
 import (
 	"todo/app"
+	"todo/config"
 )
 
 func main() {
-	app, err := app.NewApp()
+	cfg := config.NewFromEnv()
+
+	app, err := app.NewApp(cfg)
 	if err != nil {
 		panic(err)
 	}

@@ -2,7 +2,7 @@ FROM golang:1.21
 
 WORKDIR /build
 
-ENV APP_PORT=3000
+ENV APP_PORT=":3000"
 
 COPY app /build/app
 COPY cmd /build/cmd

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -32,7 +31,7 @@ func (h *TodoHandler) JSONSuccessRespond(w http.ResponseWriter, httpCode int, da
 
 	jsonMarshal, err := json.Marshal(data)
 	if err != nil {
-		fmt.Println("[JSONSuccessRespond] have error is marshal")
+		h.logger.Err(err).Msg("[JSONSuccessRespond] have error is marshal")
 		h.JSONErrorRespond(w, InternalServerError)
 		return
 	}
@@ -40,6 +39,6 @@ func (h *TodoHandler) JSONSuccessRespond(w http.ResponseWriter, httpCode int, da
 	w.WriteHeader(httpCode)
 
 	if _, errWriter := w.Write(jsonMarshal); errWriter != nil {
-		_ = fmt.Errorf("[JSONErrorRespond] error is - %w\n", errWriter)
+		h.logger.Err(err).Msgf("[JSONErrorRespond] error is - %w\n", errWriter)
 	}
 }

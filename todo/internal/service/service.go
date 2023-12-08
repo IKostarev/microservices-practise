@@ -26,7 +26,7 @@ func NewTodoService(userRepo TodoRepository) *TodoService {
 	}
 }
 
-func (s *TodoService) CreateToDo(ctx context.Context, newTodo *models.TodoDTO) (*models.TodoDTO, error) {
+func (s *TodoService) CreateToDo(ctx context.Context, newTodo *models.TodoDTO) (uuid.UUID, error) {
 	context, _ := context.WithTimeout(ctx, time.Second*3)
 
 	m := &models.TodoDAO{
@@ -40,13 +40,13 @@ func (s *TodoService) CreateToDo(ctx context.Context, newTodo *models.TodoDTO) (
 
 	createResult, err := s.userRepo.CreateToDo(context, m)
 	if err != nil {
-		return nil, fmt.Errorf("[CreateToDo] create - %w\n", err)
+		return uuid.Nil, fmt.Errorf("[CreateToDo] create - %w\n", err)
 	}
 
-	return (*models.TodoDTO)(createResult), nil
+	return createResult, nil
 }
 
-func (s *TodoService) UpdateToDo(ctx context.Context, newTodo *models.TodoDTO) (*models.TodoDTO, error) {
+func (s *TodoService) UpdateToDo(ctx context.Context, newTodo *models.TodoDTO) error {
 	context, _ := context.WithTimeout(ctx, time.Second*3)
 
 	m := &models.TodoDAO{
@@ -55,15 +55,15 @@ func (s *TodoService) UpdateToDo(ctx context.Context, newTodo *models.TodoDTO) (
 		Assignee:    newTodo.Assignee,
 		Description: newTodo.Description,
 		CreatedAt:   newTodo.CreatedAt,
-		UpdatedAt:   newTodo.UpdatedAt,
+		UpdatedAt:   time.Now(),
 	}
 
-	updateResult, err := s.userRepo.UpdateToDo(context, m)
+	err := s.userRepo.UpdateToDo(context, m)
 	if err != nil {
-		return nil, fmt.Errorf("[UpdateToDo] update - %w\n", err)
+		return fmt.Errorf("[UpdateToDo] update - %w\n", err)
 	}
 
-	return (*models.TodoDTO)(updateResult), nil
+	return nil
 }
 
 func (s *TodoService) GetToDos(ctx context.Context) ([]models.TodoDTO, error) {
@@ -85,7 +85,6 @@ func (s *TodoService) GetToDos(ctx context.Context) ([]models.TodoDTO, error) {
 			CreatedAt:   item.CreatedAt,
 			UpdatedAt:   item.UpdatedAt,
 		})
-
 	}
 
 	return result, nil

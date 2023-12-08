@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/kelseyhightower/envconfig"
+	"todo/pkg/db/postgres"
 	"todo/pkg/logger"
 )
 
@@ -11,12 +12,25 @@ type App struct {
 }
 
 type Config struct {
-	App    App                 `envconfig:"APP"`
-	Logger logger.LoggerConfig `envconfig:"LOGGER"`
+	App        App                 `envconfig:"APP"`
+	Logger     logger.LoggerConfig `envconfig:"LOGGER"`
+	Database   postgres.PostgreSQL `envconfig:"POSTGRES"`
+	Migrations MigrationsConfig
 }
 
-func NewFromEnv() *Config {
+type MigrationsConfig struct {
+	Postgres postgres.PostgreSQL `envconfig:"POSTGRES"`
+}
+
+func LoadConfig() *Config {
 	c := Config{}
+	envconfig.MustProcess("", &c)
+	c.Migrations = *LoadMigrationsConfig()
+	return &c
+}
+
+func LoadMigrationsConfig() *MigrationsConfig {
+	c := MigrationsConfig{}
 	envconfig.MustProcess("", &c)
 	return &c
 }

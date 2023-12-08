@@ -38,11 +38,7 @@ func (h *TodoHandler) CreateToDoHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	resp := struct {
-		TodoID uuid.UUID `json:"todo_id"`
-	}{TodoID: todoID.ID}
-
-	h.JSONSuccessRespond(w, Created, resp)
+	h.JSONSuccessRespond(w, Created, todoID)
 }
 
 func (h *TodoHandler) GetToDoHandler(w http.ResponseWriter, r *http.Request) {
@@ -88,14 +84,14 @@ func (h *TodoHandler) UpdateToDoHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	resp, err := h.todoService.UpdateToDo(ctx, updTodo)
+	err := h.todoService.UpdateToDo(ctx, updTodo)
 	if err != nil {
 		h.logger.Err(err).Msg("[UpdateToDoHandler] error update todo")
 		h.JSONErrorRespond(w, InternalServerError)
 		return
 	}
 
-	h.JSONSuccessRespond(w, OK, resp)
+	h.JSONSuccessRespond(w, OK, nil)
 }
 
 func (h *TodoHandler) DeleteToDoHandler(w http.ResponseWriter, r *http.Request) {

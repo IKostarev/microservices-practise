@@ -11,7 +11,7 @@ services:
   todo:
     build:
       context: ./todo
-      dockerfile: ./cmd
+      dockerfile: ./cmd/Dockerfile
     ports:
       - "3001:3000"
   postgres:

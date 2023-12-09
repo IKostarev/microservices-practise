@@ -1,17 +1,19 @@
 package app
 
 import (
-	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog"
 	"net/http"
 	"todo/config"
 	"todo/internal/handlers"
 	"todo/internal/service"
+	"todo/pkg/logger"
 )
 
 type App struct {
 	cfg         *config.Config
 	router      *mux.Router
+	logger      *zerolog.Logger
 	todoService handlers.TodoService
 }
 
@@ -20,12 +22,13 @@ func NewApp(cfg *config.Config) (*App, error) {
 
 	return &App{
 		cfg:         cfg,
+		logger:      logger.NewLogger(cfg.Logger),
 		todoService: todoService,
 	}, nil
 }
 
 func (a *App) RunAPI() {
-	todoHandler := handlers.NewTodoHandler(a.todoService)
+	todoHandler := handlers.NewTodoHandler(a.todoService, a.logger)
 
 	a.router = mux.NewRouter()
 
@@ -38,6 +41,6 @@ func (a *App) RunAPI() {
 	r.HandleFunc("/{id}", todoHandler.DeleteToDoHandler).Methods(http.MethodDelete)
 
 	if err := http.ListenAndServe(a.cfg.App.AppPort, a.router); err != nil {
-		fmt.Printf("ListenAndServe error is - %s\n", err)
+		a.logger.Err(err).Msgf("ListenAndServe error is - %s\n", err)
 	}
 }

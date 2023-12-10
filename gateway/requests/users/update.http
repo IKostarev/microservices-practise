@@ -1,0 +1,9 @@
+### Send PUT request with json body
+PUT {{host}}/update
+Content-Type: application/json
+
+{
+  "id": 1,
+  "username": "popov"
+}
+

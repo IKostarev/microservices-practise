@@ -11,8 +11,4 @@ type UserService interface {
 	UpdatePassword(ctx context.Context, updatePassword *models.UpdateUserPasswordDTO) error
 	DeleteUser(ctx context.Context, userID int) error
 	GetUserByID(ctx context.Context, userID int) (*models.UserDTO, error)
-
-	Login(ctx context.Context, login *models.UserLoginDTO) (*models.UserTokens, error)
-	Refresh(ctx context.Context, refresh string) (*models.UserTokens, error)
-	VerifyToken(ctx context.Context, accessToken string) (int, error)
 }

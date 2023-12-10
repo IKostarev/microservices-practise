@@ -2,36 +2,31 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/subtle"
 	"database/sql"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"golang.org/x/crypto/argon2"
 	"strings"
 	"users/config"
 	appErrors "users/internal/app_errors"
 	"users/internal/models"
-	"users/pkg/jwtutil"
-
-	"crypto/rand"
-	"golang.org/x/crypto/argon2"
 )
 
 type UserService struct {
 	passConfig *config.PasswordConfig
 	userRepo   UserRepository
-	jwtUtil    *jwtutil.JWTUtil
 }
 
 func NewUserService(
 	passwordConfig *config.PasswordConfig,
 	userRepo UserRepository,
-	util *jwtutil.JWTUtil,
 ) *UserService {
 	return &UserService{
 		passConfig: passwordConfig,
 		userRepo:   userRepo,
-		jwtUtil:    util,
 	}
 }
 
@@ -199,72 +194,4 @@ func ComparePassword(password, hash string) (bool, error) {
 	comparisonHash := argon2.IDKey([]byte(password), salt, c.Time, c.Memory, c.Threads, c.KeyLen)
 
 	return subtle.ConstantTimeCompare(decodedHash, comparisonHash) == 1, nil
-}
-
-func (s *UserService) Login(ctx context.Context, login *models.UserLoginDTO) (*models.UserTokens, error) {
-	// Проверка наличия пользователя.
-	existingUser, err := s.userRepo.GetUserByUsernameOrEmail(ctx, login.Username, login.Email)
-	if err != nil {
-		if errors.As(err, &sql.ErrNoRows) {
-			return nil, appErrors.ErrWrongCredentials
-		}
-		return nil, fmt.Errorf("[Login] get user: %w", err)
-	}
-
-	// Проверка пароля.
-	passMatch, err := ComparePassword(login.Password, existingUser.Password)
-	if err != nil {
-		return nil, fmt.Errorf("[Login] verify pass:%w", err)
-	}
-	if !passMatch {
-		return nil, fmt.Errorf("[Login] verify pass:%w", appErrors.ErrWrongCredentials)
-	}
-
-	// Генерируем токены и возвращаем
-	accessToken, err := s.jwtUtil.GenerateAccessToken(existingUser.ID)
-	if err != nil {
-		return nil, fmt.Errorf("[Login] generate access token:%w", err)
-	}
-
-	refreshToken, err := s.jwtUtil.GenerateRefreshToken(existingUser.ID)
-	if err != nil {
-		return nil, fmt.Errorf("[Login] generate refresh token:%w", err)
-	}
-
-	return &models.UserTokens{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}, nil
-}
-
-func (s *UserService) Refresh(ctx context.Context, refresh string) (*models.UserTokens, error) {
-	userID, err := s.jwtUtil.VerifyToken(refresh)
-	if err != nil {
-		return nil, fmt.Errorf("[Refresh] verify token:%w", err)
-	}
-
-	// Генерируем токены и возвращаем
-	accessToken, err := s.jwtUtil.GenerateAccessToken(userID)
-	if err != nil {
-		return nil, fmt.Errorf("[Refresh] generate access token:%w", err)
-	}
-
-	refreshToken, err := s.jwtUtil.GenerateRefreshToken(userID)
-	if err != nil {
-		return nil, fmt.Errorf("[Refresh] generate refresh token:%w", err)
-	}
-
-	return &models.UserTokens{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}, nil
-}
-
-func (s *UserService) VerifyToken(ctx context.Context, accessToken string) (int, error) {
-	userID, err := s.jwtUtil.VerifyToken(accessToken)
-	if err != nil {
-		return userID, fmt.Errorf("[VerifyToken] verify token:%w", err)
-	}
-
-	return userID, nil
 }

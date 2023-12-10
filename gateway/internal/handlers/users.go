@@ -3,30 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	appErrors "gateway/internal/app_errors"
+	"gateway/internal/models"
 	"github.com/gorilla/mux"
-	"github.com/rs/zerolog"
 	"net/http"
 	"strconv"
-	appErrors "users/internal/app_errors"
-	"users/internal/models"
 )
 
-type UserHandler struct {
-	logger      *zerolog.Logger
-	userService UserService
-}
-
-func NewUserHandler(
-	logger *zerolog.Logger,
-	userService UserService,
-) *UserHandler {
-	return &UserHandler{
-		logger:      logger,
-		userService: userService,
-	}
-}
-
-func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
+func (h *GatewayHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// Обработка запроса на регистрацию нового пользователя.
 	var newUser = new(models.CreateUserDTO)
@@ -37,7 +21,7 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// передаем данные в слой сервиса
-	userID, err := h.userService.RegisterUser(ctx, newUser)
+	userID, err := h.gatewayService.RegisterUser(ctx, newUser)
 	if err != nil {
 		if errors.As(err, &appErrors.ErrUsernameOrEmailIsUsed) {
 			h.ErrorUsernameOrEmailAlreadyUsed(w)
@@ -57,7 +41,7 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	h.JSONSuccessRespond(w, response)
 }
 
-func (h *UserHandler) GetGetUserById(w http.ResponseWriter, r *http.Request) {
+func (h *GatewayHandler) GetGetUserById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Обработка запроса на получение информации о пользователе.
@@ -69,7 +53,7 @@ func (h *UserHandler) GetGetUserById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// передаем данные в слой сервиса
-	user, err := h.userService.GetUserByID(ctx, userID)
+	user, err := h.gatewayService.GetUserByID(ctx, userID)
 	if err != nil {
 		if errors.As(err, &appErrors.ErrNotFound) {
 			h.ErrorNotFound(w)
@@ -85,7 +69,7 @@ func (h *UserHandler) GetGetUserById(w http.ResponseWriter, r *http.Request) {
 	h.JSONSuccessRespond(w, user)
 }
 
-func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+func (h *GatewayHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Обработка запроса на обновление информации о пользователе.
@@ -97,7 +81,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// передаем данные в слой сервиса
-	response, err := h.userService.UpdateUser(ctx, updatedUser)
+	response, err := h.gatewayService.UpdateUser(ctx, updatedUser)
 	if err != nil {
 		h.logger.Error().Msgf("[UpdateUser] update user: %s", err)
 		h.ErrorInternalApi(w)
@@ -108,7 +92,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	h.JSONSuccessRespond(w, response)
 }
 
-func (h *UserHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+func (h *GatewayHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Обработка запроса на изменение пароля пользователя.
@@ -120,7 +104,7 @@ func (h *UserHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// передаем данные в слой сервиса
-	if err := h.userService.UpdatePassword(ctx, passwordRequest); err != nil {
+	if err := h.gatewayService.UpdatePassword(ctx, passwordRequest); err != nil {
 		h.logger.Error().Msgf("[UpdatePassword] update password: %s", err)
 		h.ErrorInternalApi(w)
 		return
@@ -130,7 +114,7 @@ func (h *UserHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	h.JSONSuccessRespond(w, nil)
 }
 
-func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+func (h *GatewayHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Обработка запроса на удаление пользователя.
@@ -142,7 +126,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// передаем данные в слой сервиса
-	if err := h.userService.DeleteUser(ctx, userID); err != nil {
+	if err := h.gatewayService.DeleteUser(ctx, userID); err != nil {
 		h.logger.Error().Msgf("[DeleteUser] delete user: %s", err)
 		h.ErrorInternalApi(w)
 		return
@@ -150,4 +134,56 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	// возвращаем пользователю ответ - в данном случе просто status 200
 	h.JSONSuccessRespond(w, nil)
+}
+
+func (h *GatewayHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Обработка запроса на удаление пользователя.
+	var request = new(models.UserLoginDTO)
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		h.logger.Error().Msgf("[UserLogin] unmarshall: %s", err)
+		h.ErrorBadRequest(w)
+		return
+	}
+
+	response, err := h.gatewayService.Login(ctx, request)
+	if err != nil {
+		if errors.As(err, &appErrors.ErrWrongCredentials) {
+			h.ErrorWrongCredentials(w)
+			return
+		}
+
+		h.logger.Error().Msgf("[UserLogin] login: %s", err)
+		h.ErrorInternalApi(w)
+		return
+	}
+
+	// возвращаем пользователю ответ
+	h.JSONSuccessRespond(w, response)
+}
+
+func (h *GatewayHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Обработка запроса на удаление пользователя.
+	var request = new(models.UserTokens)
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		h.logger.Error().Msgf("[Refresh] unmarshall: %s", err)
+		h.ErrorBadRequest(w)
+		return
+	}
+
+	// передаем данные слою бизнес-логики
+	response, err := h.gatewayService.Refresh(ctx, request.RefreshToken)
+	if err != nil {
+		h.logger.Error().Msgf("[Refresh] refresh: %s", err)
+		h.ErrorInternalApi(w)
+		return
+	}
+
+	// возвращаем пользователю ответ
+	h.JSONSuccessRespond(w, response)
 }

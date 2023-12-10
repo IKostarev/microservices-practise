@@ -2,14 +2,12 @@ package config
 
 import (
 	"github.com/kelseyhightower/envconfig"
-	"users/pkg/jwtutil"
 	"users/pkg/logging"
 	"users/pkg/postgresql"
 )
 
 type Config struct {
 	App      App                   `envconfig:"APP"`
-	JWT      jwtutil.JWTUtil       `envconfig:"JWT"`
 	Password PasswordConfig        `envconfig:"PASS"`
 	Logging  logging.LoggerConfig  `envconfig:"LOG"`
 	Postgres postgresql.PostgreSQL `envconfig:"POSTGRES"`

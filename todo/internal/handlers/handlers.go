@@ -64,7 +64,9 @@ func (h *TodoHandler) GetToDoHandler(w http.ResponseWriter, r *http.Request) {
 func (h *TodoHandler) GetToDosHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	todos, err := h.todoService.GetToDos(ctx)
+	todoID := uuid.Must(uuid.FromBytes([]byte(mux.Vars(r)["id"])))
+
+	todos, err := h.todoService.GetToDos(ctx, todoID)
 	if err != nil {
 		h.logger.Err(err).Msg("[GetToDosHandler] error get ToDos")
 		h.JSONErrorRespond(w, InternalServerError)

@@ -23,9 +23,15 @@ services:
       POSTGRES_PORT: 5432
     ports:
       - "5430:5432"
-  migrate:
+  migrate_todo:
     build:
       context: ./todo
+      dockerfile: ./cmd/migrations/Dockerfile
+    depends_on:
+      - postgres
+  migrate_users:
+    build:
+      context: ./users
       dockerfile: ./cmd/migrations/Dockerfile
     depends_on:
       - postgres

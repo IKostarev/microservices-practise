@@ -66,10 +66,10 @@ func (s *TodoService) UpdateToDo(ctx context.Context, newTodo *models.TodoDTO) e
 	return nil
 }
 
-func (s *TodoService) GetToDos(ctx context.Context) ([]models.TodoDTO, error) {
+func (s *TodoService) GetToDos(ctx context.Context, todoID uuid.UUID) ([]models.TodoDTO, error) {
 	context, _ := context.WithTimeout(ctx, time.Second*3)
 
-	list, err := s.userRepo.GetToDos(context)
+	list, err := s.userRepo.GetToDos(context, todoID)
 	if err != nil {
 		return nil, fmt.Errorf("[GetToDos] get todos - %w\n", err)
 	}

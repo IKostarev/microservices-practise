@@ -1,15 +1,18 @@
-package handlers
+package rest
 
-import "github.com/rs/zerolog"
+import (
+	rest "gateway/internal/api"
+	"github.com/rs/zerolog"
+)
 
 type GatewayHandler struct {
 	logger         *zerolog.Logger
-	gatewayService GatewayService
+	gatewayService rest.GatewayService
 }
 
 func NewGatewayHandler(
 	logger *zerolog.Logger,
-	gatewayService GatewayService,
+	gatewayService rest.GatewayService,
 ) *GatewayHandler {
 	return &GatewayHandler{
 		logger:         logger,

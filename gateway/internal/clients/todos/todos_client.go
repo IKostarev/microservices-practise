@@ -1,4 +1,4 @@
-package todos_client
+package todos
 
 import (
 	"context"

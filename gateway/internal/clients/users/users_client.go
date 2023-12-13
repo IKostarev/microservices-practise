@@ -1,4 +1,4 @@
-package users_client
+package users
 
 import (
 	"context"
@@ -15,9 +15,7 @@ func NewUsersClient() *UsersClient {
 func (c *UsersClient) CreateUser(ctx context.Context, user *models.CreateUserDTO) (int, error) {
 	return 0, nil
 }
-func (c *UsersClient) UpdateUser(ctx context.Context, user *models.UserDTO) error {
-	return nil
-}
+func (c *UsersClient) UpdateUser(ctx context.Context, user *models.UserDTO) error { return nil }
 func (c *UsersClient) UpdatePassword(ctx context.Context, data *models.UpdateUserPasswordDTO) error {
 	return nil
 }

@@ -8,6 +8,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/rs/zerolog v1.31.0
+	golang.org/x/sync v0.5.0
 )
 
 require (

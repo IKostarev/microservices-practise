@@ -1,0 +1,4 @@
+### Send DELETE request with json body
+DELETE {{host}}/delete/1
+Authorization: Bearer {{access_token}}
+

@@ -1,0 +1,72 @@
+// Протокол использует синтаксис proto3
+syntax = "proto3";
+
+// Импорт определения google.protobuf.Empty из стандартной библиотеки Protocol Buffers
+import "google/protobuf/empty.proto";
+
+// Опция go_package указывает путь к пакету Go, куда будут сгенерированы исходные файлы
+option go_package = "gitlab.com/ep.egor.popov/todo/api/protos/users";
+
+// Определение пакета userservice внутри файла .proto
+package userservice;
+
+// UserID - Структура для передачи ID пользователя
+message UserID {
+  int32 id = 1;
+}
+
+// UserDTO - Структура данных пользователя (Data Transfer Object)
+message UserDTO {
+  int32 id = 1; // optional (опциональное поле)
+  string username = 2;
+  string password = 3; // optional
+  string email = 4; // optional
+}
+
+// CreateUserDTO - Структура данных для создания пользователя
+message CreateUserDTO {
+  int32 id = 1; // optional
+  string username = 2;
+  string password = 3; // optional
+  string password_confirmation = 4; // optional
+  string email = 5; // optional
+}
+
+// UpdateUserPasswordDTO - Структура данных для обновления пароля пользователя
+message UpdateUserPasswordDTO {
+  int32 id = 1; // optional
+  string old_password = 2;
+  string password = 3;
+  string password_confirmation = 4; // optional
+}
+
+// UserLoginDTO - Структура данных для входа пользователя
+message UserLoginDTO {
+  string username = 1; // optional
+  string password = 2;
+  string email = 3; // optional
+}
+
+// Определение сервиса UserService с методами RPC
+service UserService {
+  // Метод RPC для регистрации пользователя. Принимает CreateUserDTO и возвращает UserID
+  rpc RegisterUser(CreateUserDTO) returns (UserID);
+
+  // Метод RPC для обновления данных пользователя. Принимает и возвращает UserDTO
+  rpc UpdateUser(UserDTO) returns (UserDTO);
+
+  // Метод RPC для обновления пароля пользователя. Принимает UpdateUserPasswordDTO и возвращает пустой ответ
+  rpc UpdatePassword(UpdateUserPasswordDTO) returns (google.protobuf.Empty);
+
+  // Метод RPC для удаления пользователя. Принимает UserID и возвращает пустой ответ
+  rpc DeleteUser(UserID) returns (google.protobuf.Empty);
+
+  // Метод RPC для получения данных пользователя по ID. Принимает UserID и возвращает UserDTO
+  rpc GetUserByID(UserID) returns (UserDTO);
+
+  // Метод RPC для получения данных пользователя по имени или email. Принимает UserDTO и возвращает UserDTO
+  rpc GetUserByUsernameOrEmail(UserDTO) returns (UserDTO);
+
+  // Метод RPC для входа пользователя. Принимает UserLoginDTO и возвращает UserDTO
+  rpc Login(UserLoginDTO) returns (UserDTO);
+}

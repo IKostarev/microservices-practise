@@ -1,14 +1,6 @@
 package models
 
-import "users/pkg/grpc_stubs/users"
-
-// UserDAO - data access object - струтктура для работы с базой данных
-type UserDAO struct {
-	ID       int    `db:"id"`
-	Username string `db:"username"`
-	Password string `db:"password"`
-	Email    string `db:"email"`
-}
+import "gateway/pkg/grpc_stubs/users"
 
 // UserDTO - data transfer object - общая струтктура для передачи данных пользователя
 type UserDTO struct {

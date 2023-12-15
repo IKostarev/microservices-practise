@@ -6,7 +6,8 @@ import (
 	"github.com/rs/zerolog"
 	"net/http"
 	"users/config"
-	"users/internal/handlers"
+	"users/internal/api"
+	"users/internal/api/rest"
 	"users/internal/repository"
 	"users/internal/service"
 	"users/pkg/logging"
@@ -17,7 +18,7 @@ type App struct {
 	cfg         *config.Config
 	logger      *zerolog.Logger
 	router      *mux.Router
-	userService handlers.UserService
+	userService api.UserService
 }
 
 func NewApp(
@@ -33,7 +34,7 @@ func NewApp(
 	userRepo := repository.NewUserRepository(databaseConn)
 
 	// передадим реализацию репозитория конструктору сервиса
-	userService := service.NewUserService(&cfg.Password, userRepo, &cfg.JWT)
+	userService := service.NewUserService(&cfg.Password, userRepo)
 
 	logger := logging.NewLogger(cfg.Logging)
 
@@ -46,7 +47,7 @@ func NewApp(
 
 func (a *App) RunApp() {
 	// инициализируем хэндлер
-	userHandler := handlers.NewUserHandler(a.logger, a.userService)
+	userHandler := rest.NewUserHandler(a.logger, a.userService)
 
 	// инициализация роутера и сохранение его в соотвтетсвующее поле приложения
 	a.router = mux.NewRouter()
@@ -61,13 +62,6 @@ func (a *App) RunApp() {
 	a.router.HandleFunc("/users/update-password", userHandler.UpdatePassword).Methods(http.MethodPut)
 	// удалить пользователя
 	a.router.HandleFunc("/users/delete/{id:[0-9]+}", userHandler.DeleteUser).Methods(http.MethodDelete)
-
-	// выполнить вход в систему
-	a.router.HandleFunc("/users/login", userHandler.UserLogin).Methods(http.MethodPost)
-	// обновить токены пользователя
-	a.router.HandleFunc("/users/refresh", userHandler.Refresh).Methods(http.MethodPost)
-	// верифицировать токены пользователя
-	a.router.HandleFunc("/users/verify", userHandler.Verify).Methods(http.MethodPost)
 
 	// запустить вебсервер по адресу, передать в него роутер
 	appAddr := fmt.Sprintf("%s:%s", a.cfg.App.AppHost, a.cfg.App.AppPort) // добавлен

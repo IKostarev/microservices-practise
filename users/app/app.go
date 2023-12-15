@@ -6,7 +6,8 @@ import (
 	"github.com/rs/zerolog"
 	"net/http"
 	"users/config"
-	"users/internal/handlers"
+	"users/internal/api"
+	"users/internal/api/rest"
 	"users/internal/repository"
 	"users/internal/service"
 	"users/pkg/logging"
@@ -17,7 +18,7 @@ type App struct {
 	cfg         *config.Config
 	logger      *zerolog.Logger
 	router      *mux.Router
-	userService handlers.UserService
+	userService api.UserService
 }
 
 func NewApp(
@@ -46,7 +47,7 @@ func NewApp(
 
 func (a *App) RunApp() {
 	// инициализируем хэндлер
-	userHandler := handlers.NewUserHandler(a.logger, a.userService)
+	userHandler := rest.NewUserHandler(a.logger, a.userService)
 
 	// инициализация роутера и сохранение его в соотвтетсвующее поле приложения
 	a.router = mux.NewRouter()

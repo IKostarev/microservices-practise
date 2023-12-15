@@ -1,4 +1,4 @@
-package handlers
+package api
 
 import (
 	"context"
@@ -11,4 +11,6 @@ type UserService interface {
 	UpdatePassword(ctx context.Context, updatePassword *models.UpdateUserPasswordDTO) error
 	DeleteUser(ctx context.Context, userID int) error
 	GetUserByID(ctx context.Context, userID int) (*models.UserDTO, error)
+	GetUserByUsernameOrEmail(ctx context.Context, name, email string) (*models.UserDTO, error)
+	Login(ctx context.Context, login *models.UserLoginDTO) (*models.UserDTO, error)
 }

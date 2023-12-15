@@ -20,13 +20,15 @@ type App struct {
 }
 
 type UsersClient struct {
-	AppHost string `envconfig:"USERS_HOST" required:"true" default:"localhost"`
-	AppPort string `envconfig:"USERS_PORT" required:"true" default:"8000"`
+	AppHost     string `envconfig:"USERS_HOST" required:"true" default:"0.0.0.0"`
+	AppRestPort string `envconfig:"USERS_REST_PORT" required:"true" default:"3000"`
+	AppGrpcPort string `envconfig:"USERS_GRPC_PORT" required:"true" default:"50000"`
 }
 
 type TodosClient struct {
-	AppHost string `envconfig:"TODOS_HOST" required:"true" default:"localhost"`
-	AppPort string `envconfig:"TODOS_PORT" required:"true" default:"8000"`
+	AppHost     string `envconfig:"TODOS_HOST" required:"true" default:"0.0.0.0"`
+	AppRestPort string `envconfig:"TODOS_REST_PORT" required:"true" default:"3000"`
+	AppGrpcPort string `envconfig:"TODOS_GRPC_PORT" required:"true" default:"50000"`
 }
 
 func NewFromEnv() *Config {

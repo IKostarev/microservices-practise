@@ -1,4 +1,4 @@
-package handlers
+package rest
 
 import (
 	"encoding/json"
@@ -7,18 +7,19 @@ import (
 	"github.com/rs/zerolog"
 	"net/http"
 	"strconv"
+	"users/internal/api"
 	appErrors "users/internal/app_errors"
 	"users/internal/models"
 )
 
 type UserHandler struct {
 	logger      *zerolog.Logger
-	userService UserService
+	userService api.UserService
 }
 
 func NewUserHandler(
 	logger *zerolog.Logger,
-	userService UserService,
+	userService api.UserService,
 ) *UserHandler {
 	return &UserHandler{
 		logger:      logger,

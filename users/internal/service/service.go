@@ -151,6 +151,54 @@ func (s *UserService) GetUserByID(ctx context.Context, userID int) (*models.User
 	return userResponse, nil
 }
 
+func (s *UserService) GetUserByUsernameOrEmail(ctx context.Context, name, email string) (*models.UserDTO, error) {
+	// Получение пользователя по его идентификатору.
+	var userResponse = new(models.UserDTO)
+	storedUser, err := s.userRepo.GetUserByUsernameOrEmail(ctx, name, email)
+	if err != nil {
+		if errors.As(err, &sql.ErrNoRows) {
+			return nil, appErrors.ErrNotFound
+		}
+		return userResponse, fmt.Errorf("[GetUserByID] get user:%w", err)
+	}
+
+	// запись данных из DAO - data access object через которую мы работаем с базой данных
+	// в DTO - data transfer object, который мы возвращаем пользователю
+	userResponse.ID = storedUser.ID
+	userResponse.Username = storedUser.Username
+	userResponse.Email = storedUser.Email
+
+	// возврат данных пользователю
+	return userResponse, nil
+}
+
+func (s *UserService) Login(ctx context.Context, login *models.UserLoginDTO) (*models.UserDTO, error) {
+	// Проверка наличия пользователя.
+	existingUser, err := s.userRepo.GetUserByUsernameOrEmail(ctx, login.Username, login.Email)
+	if err != nil {
+		if errors.As(err, &sql.ErrNoRows) {
+			return nil, appErrors.ErrWrongCredentials
+		}
+		return nil, fmt.Errorf("[Login] get user: %w", err)
+	}
+
+	// Проверка пароля
+	passMatch, err := ComparePassword(login.Password, existingUser.Password)
+	if err != nil {
+		return nil, fmt.Errorf("[Login] verify pass:%w", err)
+	}
+	if !passMatch {
+		return nil, fmt.Errorf("[Login] verify pass:%w", appErrors.ErrWrongCredentials)
+	}
+
+	// возврат данных пользователю
+	return &models.UserDTO{
+		ID:       existingUser.ID,
+		Username: existingUser.Username,
+		Email:    existingUser.Email,
+	}, nil
+}
+
 // GeneratePassword создает пароль на основе библиотеки golang.org/x/crypto/argon2
 func GeneratePassword(c *config.PasswordConfig, password string) (string, error) {
 	salt := make([]byte, 16)

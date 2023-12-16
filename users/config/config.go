@@ -4,14 +4,18 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"users/pkg/logging"
 	"users/pkg/postgresql"
+	"users/pkg/rabbitmq"
 )
 
 type Config struct {
-	App      App                   `envconfig:"APP"`
-	Grpc     Grpc                  `envconfig:"GRPC"`
-	Password PasswordConfig        `envconfig:"PASS"`
-	Logging  logging.LoggerConfig  `envconfig:"LOG"`
-	Postgres postgresql.PostgreSQL `envconfig:"POSTGRES"`
+	App           App                           `envconfig:"APP"`
+	Grpc          Grpc                          `envconfig:"GRPC"`
+	Password      PasswordConfig                `envconfig:"PASS"`
+	Logging       logging.LoggerConfig          `envconfig:"LOG"`
+	Postgres      postgresql.PostgreSQL         `envconfig:"POSTGRES"`
+	RabbitConfig  rabbitmq.RabbitProducerConfig `envconfig:"RABBITMQ"`
+	UsersExchange string                        `envconfig:"RABBITMQ_USERS_EXCHANGE" default:"users.exchange"`
+	UsersQueue    string                        `envconfig:"RABBITMQ_USERS_QUEUE" default:"users.queue"`
 }
 
 type MigrationsConfig struct {

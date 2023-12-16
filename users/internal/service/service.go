@@ -16,17 +16,20 @@ import (
 )
 
 type UserService struct {
-	passConfig *config.PasswordConfig
-	userRepo   UserRepository
+	passConfig         *config.PasswordConfig
+	userRepo           UserRepository
+	userRabbitProducer RabbitProducer
 }
 
 func NewUserService(
 	passwordConfig *config.PasswordConfig,
 	userRepo UserRepository,
+	userRabbitProducer RabbitProducer,
 ) *UserService {
 	return &UserService{
-		passConfig: passwordConfig,
-		userRepo:   userRepo,
+		passConfig:         passwordConfig,
+		userRepo:           userRepo,
+		userRabbitProducer: userRabbitProducer,
 	}
 }
 

@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
-	"net/http"
+	"golang.org/x/sync/errgroup"
 	"users/config"
 	"users/internal/api"
+	"users/internal/api/grpc"
 	"users/internal/api/rest"
 	"users/internal/repository"
 	"users/internal/service"
@@ -45,26 +46,21 @@ func NewApp(
 	}, nil
 }
 
-func (a *App) RunApp() {
-	// инициализируем хэндлер
-	userHandler := rest.NewUserHandler(a.logger, a.userService)
+func (a *App) RunApp() error {
+	group := new(errgroup.Group)
+	group.Go(func() error {
+		err := rest.NewRestApi(a.cfg, a.logger, a.userService)
+		return fmt.Errorf("[RunApp] run REST: %w", err)
+	})
 
-	// инициализация роутера и сохранение его в соотвтетсвующее поле приложения
-	a.router = mux.NewRouter()
+	group.Go(func() error {
+		err := grpc.NewGrpcApi(a.cfg, a.logger, a.userService)
+		return fmt.Errorf("[RunApp] run GRPC: %w", err)
+	})
 
-	// зарегистрировать нового пользователя
-	a.router.HandleFunc("/users/register", userHandler.RegisterUser).Methods(http.MethodPost)
-	// получить пользователя по айди
-	a.router.HandleFunc("/users/{id:[0-9]+}", userHandler.GetGetUserById).Methods(http.MethodGet)
-	// обновить пользователя
-	a.router.HandleFunc("/users/update", userHandler.UpdateUser).Methods(http.MethodPut)
-	// обновить пароль
-	a.router.HandleFunc("/users/update-password", userHandler.UpdatePassword).Methods(http.MethodPut)
-	// удалить пользователя
-	a.router.HandleFunc("/users/delete/{id:[0-9]+}", userHandler.DeleteUser).Methods(http.MethodDelete)
+	if err := group.Wait(); err != nil {
+		return fmt.Errorf("[RunApp] run: %w", err)
+	}
 
-	// запустить вебсервер по адресу, передать в него роутер
-	appAddr := fmt.Sprintf("%s:%s", a.cfg.App.AppHost, a.cfg.App.AppPort) // добавлен
-	a.logger.Info().Msgf("running server at '%s'", appAddr)
-	http.ListenAndServe(appAddr, a.router)
+	return nil
 }

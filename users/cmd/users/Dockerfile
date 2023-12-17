@@ -41,9 +41,3 @@ ENTRYPOINT ["cmd/users/users"]
 
 # открываем порты из образа
 EXPOSE 3000/tcp
-
-POSTGRES_HOST=postgres;
-POSTGRES_PORT=5431;
-POSTGRES_USER=postgres;
-POSTGRES_PASSWORD=postgres;
-POSTGRES_DBNAME=postgres;

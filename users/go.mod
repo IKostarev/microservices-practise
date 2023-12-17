@@ -11,6 +11,7 @@ require (
 	github.com/pressly/goose/v3 v3.15.1
 	github.com/rs/zerolog v1.31.0
 	golang.org/x/crypto v0.14.0
+	golang.org/x/sync v0.4.0
 	google.golang.org/grpc v1.60.0
 	google.golang.org/protobuf v1.31.0
 )

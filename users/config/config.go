@@ -2,14 +2,13 @@ package config
 
 import (
 	"github.com/kelseyhightower/envconfig"
-	"users/pkg/jwtutil"
 	"users/pkg/logging"
 	"users/pkg/postgresql"
 )
 
 type Config struct {
 	App      App                   `envconfig:"APP"`
-	JWT      jwtutil.JWTUtil       `envconfig:"JWT"`
+	Grpc     Grpc                  `envconfig:"GRPC"`
 	Password PasswordConfig        `envconfig:"PASS"`
 	Logging  logging.LoggerConfig  `envconfig:"LOG"`
 	Postgres postgresql.PostgreSQL `envconfig:"POSTGRES"`
@@ -20,8 +19,13 @@ type MigrationsConfig struct {
 }
 
 type App struct {
-	AppHost string `envconfig:"APP_HOST" required:"true" default:"localhost"`
+	AppHost string `envconfig:"APP_HOST" required:"true" default:"0.0.0.0"`
 	AppPort string `envconfig:"APP_PORT" required:"true" default:"8000"`
+}
+
+type Grpc struct {
+	AppHost string `envconfig:"GRPC_HOST" required:"true" default:"0.0.0.0"`
+	AppPort string `envconfig:"GRPC_PORT" required:"true" default:"50000"`
 }
 
 type PasswordConfig struct {

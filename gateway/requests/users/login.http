@@ -1,0 +1,33 @@
+### Send POST request with json body
+POST {{host}}/login
+Content-Type: application/json
+
+{
+  "username": "epopov",
+  "password": "epopov"
+}
+
+> {%
+client.global.set("access_token", response.body.access_token);
+client.global.set("refresh_token", response.body.refresh_token);
+%}
+
+
+### Send POST request with json body
+POST {{host}}/login
+Content-Type: application/json
+
+{
+  "username": "eppopov",
+  "password": "eppopov"
+}
+
+### Send POST request with json body
+POST {{host}}/login
+Content-Type: application/json
+
+{
+  "username": "epopov",
+  "password": "eppopov"
+}
+

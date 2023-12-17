@@ -1,19 +1,28 @@
 version: '3'
 services:
-  users:
+  gateway-service:
+    build:
+      context: ./gateway
+      dockerfile: ./cmd/gateway/Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - users-service
+  users-service:
     build:
       context: ./users
       dockerfile: ./cmd/users/Dockerfile
     ports:
-      - "3000:3000"
+      - "3001:3000"
+      - "50000:50000"
     depends_on:
       - postgres
-  todo:
-    build:
-      context: ./todo
-      dockerfile: ./cmd/Dockerfile
-    ports:
-      - "3001:3000"
+  #  todo:
+  #    build:
+  #      context: ./todo
+  #      dockerfile: ./Dockerfile
+  #    ports:
+  #      - "3002:3002"
   postgres:
     image: postgres:15.2-alpine
     environment:
@@ -23,7 +32,7 @@ services:
       POSTGRES_PORT: 5432
     ports:
       - "5431:5432"
-  migrate:
+  migrate-users:
     build:
       context: ./users
       dockerfile: ./cmd/migrations/Dockerfile

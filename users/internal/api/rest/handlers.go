@@ -1,4 +1,4 @@
-package handlers
+package rest
 
 import (
 	"encoding/json"
@@ -7,18 +7,19 @@ import (
 	"github.com/rs/zerolog"
 	"net/http"
 	"strconv"
+	"users/internal/api"
 	appErrors "users/internal/app_errors"
 	"users/internal/models"
 )
 
 type UserHandler struct {
 	logger      *zerolog.Logger
-	userService UserService
+	userService api.UserService
 }
 
 func NewUserHandler(
 	logger *zerolog.Logger,
-	userService UserService,
+	userService api.UserService,
 ) *UserHandler {
 	return &UserHandler{
 		logger:      logger,
@@ -150,86 +151,4 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	// возвращаем пользователю ответ - в данном случе просто status 200
 	h.JSONSuccessRespond(w, nil)
-}
-
-func (h *UserHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	// Обработка запроса на удаление пользователя.
-	var request = new(models.UserLoginDTO)
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		h.logger.Error().Msgf("[UserLogin] unmarshall: %s", err)
-		h.ErrorBadRequest(w)
-		return
-	}
-
-	response, err := h.userService.Login(ctx, request)
-	if err != nil {
-		if errors.As(err, &appErrors.ErrWrongCredentials) {
-			h.ErrorWrongCredentials(w)
-			return
-		}
-
-		h.logger.Error().Msgf("[UserLogin] login: %s", err)
-		h.ErrorInternalApi(w)
-		return
-	}
-
-	// возвращаем пользователю ответ
-	h.JSONSuccessRespond(w, response)
-}
-
-func (h *UserHandler) Refresh(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	// Обработка запроса на удаление пользователя.
-	var request = new(models.UserTokens)
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		h.logger.Error().Msgf("[Refresh] unmarshall: %s", err)
-		h.ErrorBadRequest(w)
-		return
-	}
-
-	// передаем данные слою бизнес-логики
-	response, err := h.userService.Refresh(ctx, request.RefreshToken)
-	if err != nil {
-		h.logger.Error().Msgf("[Refresh] refresh: %s", err)
-		h.ErrorInternalApi(w)
-		return
-	}
-
-	// возвращаем пользователю ответ
-	h.JSONSuccessRespond(w, response)
-}
-
-func (h *UserHandler) Verify(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	// Обработка запроса на удаление пользователя.
-	var request = new(models.UserTokens)
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		h.logger.Error().Msgf("[Verify] unmarshall: %s", err)
-		h.ErrorBadRequest(w)
-		return
-	}
-
-	// передаем токен на проверку в слой бизнес-логики
-	userID, err := h.userService.VerifyToken(ctx, request.AccessToken)
-	if err != nil {
-		h.logger.Error().Msgf("[Verify] verify: %s", err)
-		h.ErrorInternalApi(w)
-		return
-	}
-
-	response := struct {
-		UserID int `json:"user_id"`
-	}{
-		UserID: userID,
-	}
-
-	// возвращаем пользователю ответ
-	h.JSONSuccessRespond(w, response)
 }

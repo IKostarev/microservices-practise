@@ -5,18 +5,15 @@ FROM golang:1.21
 WORKDIR /build
 
 # установим переменные среды
+ENV APP_HOST=0.0.0.0
 ENV APP_PORT=3000
-ENV LOG_INDEX=users
+ENV LOG_INDEX=gateway
 ENV LOG_IS_DEBUG=false
 ENV LOG_TO_FILE=false
-ENV LOG_TO_FILE=false
 
-ENV POSTGRES_HOST=postgres
-ENV POSTGRES_PORT=5432
-ENV POSTGRES_USER=postgres
-ENV POSTGRES_PASSWORD=postgres
-ENV POSTGRES_DBNAME=postgres
-
+ENV USERS_HOST=users-service
+ENV USERS_REST_PORT=3000
+ENV USERS_GRPC_PORT=50000
 
 # копируем файлы приложения в рабочую папку образа
 COPY app /build/app
@@ -33,11 +30,12 @@ COPY go.sum /build/
 # собирвем приложение
 # делаем бинарный файл исполняемым
 RUN go mod download && \
-    go build -o cmd/users/users ./cmd/users/main.go && \
-    chmod +x cmd/users/users
+    go build -o cmd/gateway/gateway ./cmd/gateway/main.go && \
+    chmod +x cmd/gateway/gateway
 
 # указываем бинарный файл
-ENTRYPOINT ["cmd/users/users"]
+ENTRYPOINT ["cmd/gateway/gateway"]
 
 # открываем порты из образа
 EXPOSE 3000/tcp
+EXPOSE 50000/tcp

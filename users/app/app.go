@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
-	"net/http"
+	"golang.org/x/sync/errgroup"
 	"users/config"
-	"users/internal/handlers"
+	"users/internal/api"
+	"users/internal/api/grpc"
+	"users/internal/api/rest"
 	"users/internal/repository"
 	"users/internal/service"
 	"users/pkg/logging"
@@ -17,7 +19,7 @@ type App struct {
 	cfg         *config.Config
 	logger      *zerolog.Logger
 	router      *mux.Router
-	userService handlers.UserService
+	userService api.UserService
 }
 
 func NewApp(
@@ -33,7 +35,7 @@ func NewApp(
 	userRepo := repository.NewUserRepository(databaseConn)
 
 	// передадим реализацию репозитория конструктору сервиса
-	userService := service.NewUserService(&cfg.Password, userRepo, &cfg.JWT)
+	userService := service.NewUserService(&cfg.Password, userRepo)
 
 	logger := logging.NewLogger(cfg.Logging)
 
@@ -44,33 +46,21 @@ func NewApp(
 	}, nil
 }
 
-func (a *App) RunApp() {
-	// инициализируем хэндлер
-	userHandler := handlers.NewUserHandler(a.logger, a.userService)
+func (a *App) RunApp() error {
+	group := new(errgroup.Group)
+	group.Go(func() error {
+		err := rest.NewRestApi(a.cfg, a.logger, a.userService)
+		return fmt.Errorf("[RunApp] run REST: %w", err)
+	})
 
-	// инициализация роутера и сохранение его в соотвтетсвующее поле приложения
-	a.router = mux.NewRouter()
+	group.Go(func() error {
+		err := grpc.NewGrpcApi(a.cfg, a.logger, a.userService)
+		return fmt.Errorf("[RunApp] run GRPC: %w", err)
+	})
 
-	// зарегистрировать нового пользователя
-	a.router.HandleFunc("/users/register", userHandler.RegisterUser).Methods(http.MethodPost)
-	// получить пользователя по айди
-	a.router.HandleFunc("/users/{id:[0-9]+}", userHandler.GetGetUserById).Methods(http.MethodGet)
-	// обновить пользователя
-	a.router.HandleFunc("/users/update", userHandler.UpdateUser).Methods(http.MethodPut)
-	// обновить пароль
-	a.router.HandleFunc("/users/update-password", userHandler.UpdatePassword).Methods(http.MethodPut)
-	// удалить пользователя
-	a.router.HandleFunc("/users/delete/{id:[0-9]+}", userHandler.DeleteUser).Methods(http.MethodDelete)
+	if err := group.Wait(); err != nil {
+		return fmt.Errorf("[RunApp] run: %w", err)
+	}
 
-	// выполнить вход в систему
-	a.router.HandleFunc("/users/login", userHandler.UserLogin).Methods(http.MethodPost)
-	// обновить токены пользователя
-	a.router.HandleFunc("/users/refresh", userHandler.Refresh).Methods(http.MethodPost)
-	// верифицировать токены пользователя
-	a.router.HandleFunc("/users/verify", userHandler.Verify).Methods(http.MethodPost)
-
-	// запустить вебсервер по адресу, передать в него роутер
-	appAddr := fmt.Sprintf("%s:%s", a.cfg.App.AppHost, a.cfg.App.AppPort) // добавлен
-	a.logger.Info().Msgf("running server at '%s'", appAddr)
-	http.ListenAndServe(appAddr, a.router)
+	return nil
 }

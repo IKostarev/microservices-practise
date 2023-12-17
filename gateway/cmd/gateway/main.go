@@ -1,8 +1,8 @@
 package main
 
 import (
-	"users/app"
-	"users/config"
+	"gateway/app"
+	"gateway/config"
 )
 
 func main() {
@@ -13,8 +13,5 @@ func main() {
 		panic(err)
 	}
 
-	err = app.RunApp()
-	if err != nil {
-		panic(err)
-	}
+	app.RunAPI()
 }

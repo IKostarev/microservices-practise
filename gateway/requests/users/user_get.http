@@ -1,0 +1,4 @@
+### Send POST request with json body
+GET {{host}}/users/1
+Authorization: Bearer {{access_token}}
+

@@ -29,7 +29,7 @@ func (a *App) RunAPI() error {
 
 	group.Go(func() error {
 		err := rabbitmq.ConsumeRabbitMessages(a.cfg, a.logger)
-		return fmt.Errorf("[RunApp] run REST: %w", err)
+		return fmt.Errorf("[RunApp] run rabbit consumer: %w", err)
 	})
 
 	if err := group.Wait(); err != nil {

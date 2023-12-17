@@ -5,15 +5,19 @@ FROM golang:1.21
 WORKDIR /build
 
 # установим переменные среды
-ENV APP_HOST=0.0.0.0
-ENV APP_PORT=3000
-ENV LOG_INDEX=gateway
+ENV LOG_INDEX=notifications
 ENV LOG_IS_DEBUG=false
 ENV LOG_TO_FILE=false
 
-ENV USERS_HOST=users-service
-ENV USERS_REST_PORT=3000
-ENV USERS_GRPC_PORT=50000
+ENV SMTP_HOST=smtp.mail.ru
+ENV SMTP_PORT=465
+ENV SMTP_USER=notifications
+ENV SMTP_PASSWORD=notifications
+
+ENV RABBITMQ_USER=notifications
+ENV RABBITMQ_PASSWORD=notifications
+ENV RABBITMQ_HOST=rabbitmq
+ENV RABBITMQ_PORT=5672
 
 # копируем файлы приложения в рабочую папку образа
 COPY app /build/app
@@ -30,12 +34,12 @@ COPY go.sum /build/
 # собирвем приложение
 # делаем бинарный файл исполняемым
 RUN go mod download && \
-    go build -o cmd/gateway/gateway ./cmd/gateway/main.go && \
-    chmod +x cmd/gateway/gateway
+    go build -o cmd/notifications/notifications ./cmd/notifications/main.go && \
+    chmod +x cmd/notifications/notifications
 
 # указываем бинарный файл
-ENTRYPOINT ["cmd/gateway/gateway"]
+ENTRYPOINT ["cmd/notifications/notifications"]
 
 # открываем порты из образа
-EXPOSE 3000/tcp
-EXPOSE 50000/tcp
+EXPOSE 5672/tcp
+EXPOSE 465/tcp

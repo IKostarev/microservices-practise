@@ -1,59 +1,42 @@
 package rabbitmq
 
 import (
-	"context"
 	"encoding/json"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/rs/zerolog"
 	"notifications/internal/api"
 	"notifications/internal/models"
-	"notifications/pkg/rabbitmq/consumer"
 )
 
-type UsersMessages struct {
+type UsersMessagesHandler struct {
+	logger       *zerolog.Logger
 	usersService api.UserService
 }
 
-func NewUsersHandler(usersService api.UserService) *UsersMessages {
-	return &UsersMessages{
+func NewUsersMessagesHandler(
+	logger *zerolog.Logger,
+	usersService api.UserService,
+) *UsersMessagesHandler {
+	return &UsersMessagesHandler{
+		logger:       logger,
 		usersService: usersService,
 	}
 }
 
-func (m *UsersMessages) Handle(
-	ctx context.Context,
-	msgList []amqp.Delivery,
-) (uint64, []rabbitmq.Error, error) {
-	var (
-		lastSuccessConsumedTag uint64
-		errorList              []rabbitmq.Error
-	)
-
-	for _, msg := range msgList {
-		userMailItem, errUnmarshal := unmarshal(msg)
-		if errUnmarshal != nil {
-			errorList = append(errorList, *errUnmarshal)
-			continue
-		}
-
-		err := m.usersService.SendUserMessage([]*models.UserMailItem{userMailItem})
-		if err != nil {
-
-		}
-	}
-
-	return lastSuccessConsumedTag, errorList, nil
-}
-
-func unmarshal(msg amqp.Delivery) (*models.UserMailItem, *rabbitmq.Error) {
+func (m *UsersMessagesHandler) Handle(d amqp.Delivery) {
 	var item models.UserMailItem
-
-	err := json.Unmarshal(msg.Body, &item)
+	err := json.Unmarshal(d.Body, &item)
 	if err != nil {
-		return nil, &rabbitmq.Error{
-			Err: err,
-			Msg: msg,
-		}
+		m.logger.Error().Msgf("Error unmarshalling message: %s", err)
+		return
 	}
 
-	return &item, nil
+	err = m.usersService.SendUserMessage(&item)
+	if err != nil {
+		m.logger.Error().Msgf("Error sending user mail: %s", err)
+		return
+	}
+
+	// Optionally acknowledge the message if processed successfully
+	d.Ack(false)
 }

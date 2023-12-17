@@ -17,6 +17,10 @@ ENV POSTGRES_USER=postgres
 ENV POSTGRES_PASSWORD=postgres
 ENV POSTGRES_DBNAME=postgres
 
+ENV RABBITMQ_USER=notifications
+ENV RABBITMQ_PASSWORD=notifications
+ENV RABBITMQ_HOST=rabbitmq
+ENV RABBITMQ_PORT=5672
 
 # копируем файлы приложения в рабочую папку образа
 COPY app /build/app
@@ -41,9 +45,3 @@ ENTRYPOINT ["cmd/users/users"]
 
 # открываем порты из образа
 EXPOSE 3000/tcp
-
-POSTGRES_HOST=postgres;
-POSTGRES_PORT=5431;
-POSTGRES_USER=postgres;
-POSTGRES_PASSWORD=postgres;
-POSTGRES_DBNAME=postgres;

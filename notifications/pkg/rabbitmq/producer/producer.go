@@ -5,9 +5,9 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog"
 	"io"
+	"notifications/pkg/rabbitmq"
 	"sync"
 	"time"
-	"users/pkg/rabbitmq"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -38,7 +38,7 @@ type Producer struct {
 }
 
 func New(
-	cfg *rabbitmq.RabbitProducerConfig,
+	cfg *rabbitmq.RabbitConfig,
 	exchangeName string,
 	queueName string,
 	log *zerolog.Logger,

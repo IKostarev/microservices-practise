@@ -1,206 +1,229 @@
-package rabbitmq
+package consumer
 
 import (
-	"context"
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog"
+	"io"
+	"notifications/pkg/rabbitmq"
+	"sync"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"go.uber.org/zap"
-	"users/pkg/rabbitmq"
 )
 
-type BatchHandler interface {
-	Handle(context.Context, []amqp.Delivery) (uint64, []Error, error)
+type MsgData struct {
+	Country string
+	Data    []byte
 }
 
-type batchConsumerConfig struct {
-	Queue         string
-	Exchange      string
-	BatchSize     int
-	BatchWaitTime time.Duration
+type handlerConfig struct {
+	queue    string
+	exchange string
+	handler  Handler
 }
 
-type BatchConsumer struct {
-	logger  *zerolog.Logger
-	config  *batchConsumerConfig
-	conn    *Connection
-	handler BatchHandler
+type Connection struct {
+	dsn              string
+	reconnectTimeout time.Duration
+	conn             *amqp.Connection
+	serviceChannel   *amqp.Channel
+	mu               sync.RWMutex
+	isClosed         bool
 }
 
-type Error struct {
-	Msg amqp.Delivery
-	Err error
+type Consumer struct {
+	io.Closer
+	Connection
+
+	logger           *zerolog.Logger
+	consumingChannel Channel
+	maxRetryAttempt  int
+	handlers         map[string]handlerConfig
 }
 
-func newBatchConsumer(
-	cfg *rabbitmq.RabbitConsumerConfig,
-	queue string,
-	exchange string,
-	handler BatchHandler,
-	logger *zerolog.Logger,
-) (*BatchConsumer, error) {
-	connCfg := &connectionConfig{
-		Host:     cfg.Host,
-		Port:     cfg.Port,
-		User:     cfg.User,
-		Password: cfg.Password,
+func New(
+	cfg *rabbitmq.RabbitConfig,
+	log *zerolog.Logger,
+) (*Consumer, error) {
+	rabbitDSN := fmt.Sprintf("amqp://%s:%s@%s:%s/", cfg.User, cfg.Password, cfg.Host, cfg.Port)
+	ret := Consumer{
+		Connection: Connection{
+			dsn:              rabbitDSN,
+			reconnectTimeout: time.Second * 10,
+		},
+		logger:          log,
+		maxRetryAttempt: cfg.MaxRetryAttempt,
+		handlers:        make(map[string]handlerConfig),
 	}
-
-	conn, err := NewConnection(connCfg, logger)
+	err := ret.persistConnect()
 	if err != nil {
-		return nil, fmt.Errorf("rabbitmq_consumer new connection fail %w", err)
+		return nil, err
 	}
 
-	consumerCfg := &batchConsumerConfig{
-		Queue:         queue,
-		Exchange:      exchange,
-		BatchSize:     cfg.BatchSize,
-		BatchWaitTime: cfg.BatchWaitTime,
-	}
-
-	consumer := &BatchConsumer{
-		handler: handler,
-		conn:    conn,
-		config:  consumerCfg,
-		logger:  logger,
-	}
-
-	if err := consumer.connect(); err != nil {
-		return nil, fmt.Errorf("rabbitmq_consumer consumer connect fail %w", err)
-	}
-
-	return consumer, nil
+	return &ret, nil
 }
 
-func (bc *BatchConsumer) connect() error {
-	cfg := bc.config
-	ch := bc.conn.channel
+func (c *Consumer) connect() error {
+	var err error
 
-	err := ch.ExchangeDeclare(cfg.Exchange, "topic", true, false, false, false, nil)
+	c.conn, err = amqp.Dial(c.dsn)
 	if err != nil {
-		return fmt.Errorf("declare amqp exchange %s: %w", cfg.Exchange, err)
+		return err
 	}
-
-	queue, err := ch.QueueDeclare(cfg.Queue, true, false, false, false, nil)
-	if err != nil {
-		return fmt.Errorf("declare amqp queue %s: %w", cfg.Queue, err)
-	}
-
-	err = ch.QueueBind(queue.Name, cfg.Queue, cfg.Exchange, false, nil)
-	if err != nil {
-		return fmt.Errorf("bind amqp queue %s to exchange %s: %w", cfg.Queue, cfg.Exchange, err)
-	}
-
-	err = ch.Qos(cfg.BatchSize, 0, true)
-	if err != nil {
-		return fmt.Errorf("amqp qos: %w", err)
-	}
-
-	bc.logger.Info().Msgf("connection to rabbitmq for %s queue established", cfg.Queue)
 
 	return nil
 }
 
-func (bc *BatchConsumer) Consume(ctx context.Context) {
-	messages := bc.delivery()
-	buffer := bc.newBatchBuffer()
-	ticker := time.NewTicker(bc.config.BatchWaitTime)
-
-	for {
-		select {
-		case <-ctx.Done():
-			bc.logger.Debug().Msgf("rabbitmq consumer for queue %s is stopped by context signal", bc.QueueName())
-			bc.processBatch(ctx, buffer)
-
-			bc.conn.Close()
-			return
-		case <-ticker.C:
-			bc.logger.Debug().Msgf("processing messages in queue %s by ticker signal", bc.QueueName())
-
-			bc.processBatch(ctx, buffer)
-			buffer = bc.newBatchBuffer()
-		case msg, ok := <-messages:
-			if !ok {
-				buffer = bc.newBatchBuffer()
-
-				bc.conn.reconnect()
-				messages = bc.delivery()
-
-				continue
-			}
-
-			buffer = append(buffer, msg)
-			if len(buffer) < bc.config.BatchSize {
-				continue
-			}
-
-			bc.processBatch(ctx, buffer)
-			buffer = bc.newBatchBuffer()
-		}
-	}
-}
-
-func (bc *BatchConsumer) delivery() <-chan amqp.Delivery {
-	delivery, err := bc.conn.channel.Consume(
-		bc.QueueName(), "", false, false, false, false, nil,
-	)
-	if err != nil {
-		bc.logger.Error().Msgf(
-			"consume failed", zap.Error(err),
-			zap.String("queue", bc.QueueName()),
-		)
-
+func (c *Consumer) persistConnect() error {
+	if c.isClosed {
 		return nil
 	}
+	if err := c.connect(); err != nil {
+		return err
+	}
 
-	return delivery
+	go func() {
+		for {
+			reason := <-c.conn.NotifyClose(make(chan *amqp.Error))
+			if reason == nil {
+				return
+			}
+			c.logger.Warn().Msgf("rabbitMQ connection closed: %s", reason.Reason)
+			if c.isClosed {
+				return
+			}
+			c.mu.Lock()
+			for {
+				if connErr := c.connect(); connErr != nil {
+					c.logger.Warn().Msg("cannot establish rabbitMQ connection after timeout")
+					time.Sleep(c.reconnectTimeout)
+					continue
+				}
+				break
+			}
+			c.mu.Unlock()
+		}
+	}()
+
+	return nil
 }
 
-func (bc *BatchConsumer) processBatch(ctx context.Context, messages []amqp.Delivery) {
-	if len(messages) == 0 {
-		return
+func (c *Consumer) Close() error {
+	var ret error
+	c.isClosed = true
+
+	err := c.conn.Close()
+	if err != nil {
+		ret = multierror.Append(ret, err)
 	}
 
-	ch := bc.conn.channel
+	return ret
+}
 
-	lastSuccessTag, handlerErrList, fatalErr := bc.handler.Handle(ctx, messages)
-	if fatalErr != nil {
-		bc.logger.Error().Msgf("batch handle failed", zap.Error(fatalErr))
+func (c *Consumer) MakeChannel() (*amqp.Channel, error) {
+	ch, err := c.conn.Channel()
+	if err != nil {
+		return nil, fmt.Errorf("creating amqp channel: %w", err)
+	}
 
-		lastMessage := messages[len(messages)-1]
-		if err := ch.Nack(lastMessage.DeliveryTag, true, true); err != nil {
-			bc.logger.Error().Msgf("nack failed", zap.Error(err))
+	return ch, nil
+}
+
+func (c *Consumer) SetHandler(queueName, exchangeName string, handler Handler) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.handlers == nil {
+		c.handlers = make(map[string]handlerConfig)
+	}
+
+	c.handlers[queueName] = handlerConfig{
+		queue:    queueName,
+		exchange: exchangeName,
+		handler:  handler,
+	}
+}
+
+func (c *Consumer) Consume(queueName, exchangeName, exchangeType string, queueDurable, exchangeDurable bool) error {
+	go func() {
+		c.mu.Lock()
+		ch, err := c.MakeChannel()
+		c.mu.Unlock()
+		if err != nil {
+			c.logger.Error().Msgf("Error making channel: %s", err)
+			return
 		}
 
-		return
-	}
-
-	for _, consumeErr := range handlerErrList {
-		bc.logger.Error().Msgf(
-			fmt.Sprintf("handle failed in queue %s", bc.QueueName()),
-			zap.Error(consumeErr.Err),
-			zap.ByteString("rabbit message", consumeErr.Msg.Body),
+		err = ch.ExchangeDeclare(
+			exchangeName,
+			exchangeType,
+			exchangeDurable,
+			false,
+			false,
+			false,
+			nil,
 		)
-		if err := ch.Reject(consumeErr.Msg.DeliveryTag, false); err != nil {
-			bc.logger.Error().Msgf("reject failed", zap.Error(err))
-		}
-	}
-
-	if lastSuccessTag > 0 {
-		if err := ch.Ack(lastSuccessTag, true); err != nil {
-			bc.logger.Error().Msgf("ack failed", zap.Error(err))
+		if err != nil {
+			c.logger.Error().Msgf("Error declaring exchange: %s", err)
+			return
 		}
 
-		bc.logger.Debug().Msgf("processed batch from queue %s, last success tag %d", bc.QueueName(), lastSuccessTag)
+		_, err = ch.QueueDeclare(
+			queueName,
+			queueDurable,
+			false,
+			false,
+			false,
+			nil,
+		)
+		if err != nil {
+			c.logger.Error().Msgf("Error declaring queue: %s", err)
+			return
+		}
+
+		err = ch.QueueBind(
+			queueName,
+			"",
+			exchangeName,
+			false,
+			nil,
+		)
+		if err != nil {
+			c.logger.Error().Msgf("Error binding queue: %s", err)
+			return
+		}
+
+		msgs, err := ch.Consume(
+			queueName,
+			"",
+			false,
+			false,
+			false,
+			false,
+			nil,
+		)
+		if err != nil {
+			c.logger.Error().Msgf("Error consuming messages: %s", err)
+			return
+		}
+
+		for msg := range msgs {
+			if handler, ok := c.handlers[queueName]; ok {
+				handler.handler.Handle(msg)
+			} else {
+				c.logger.Error().Msgf("No handler found for queue %s", queueName)
+			}
+		}
+	}()
+	return nil
+}
+
+func (c *Consumer) Run() {
+	for _, cfg := range c.handlers {
+		err := c.Consume(cfg.queue, cfg.exchange, "direct", true, true)
+		if err != nil {
+			c.logger.Error().Msgf("Error setting up consumer for queue %s: %s", cfg.queue, err)
+		}
 	}
-}
-
-func (bc *BatchConsumer) QueueName() string {
-	return bc.config.Queue
-}
-
-func (bc *BatchConsumer) newBatchBuffer() []amqp.Delivery {
-	return make([]amqp.Delivery, 0, bc.config.BatchSize)
 }

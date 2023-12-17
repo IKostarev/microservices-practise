@@ -13,6 +13,7 @@ func ConsumeRabbitMessages(
 	cfg *config.Config,
 	logger *zerolog.Logger,
 ) error {
+	logger.Info().Msg("starting notifications service")
 	rabbitMQ, err := rabbitConsumer.New(&cfg.RabbitConfig, logger)
 	if err != nil {
 		return fmt.Errorf("[ConsumeRabbitMessages] connection to rabbitmq %w", err)
@@ -20,15 +21,20 @@ func ConsumeRabbitMessages(
 
 	smtpClient := smtp.NewSmtpClient(cfg.SmtpConfig)
 	usersService := service.NewUsersService(smtpClient)
-	usersMessagesHandler := NewUsersHandler(usersService)
+	usersMessagesHandler := NewUsersMessagesHandler(logger, usersService)
 
-	err = rabbitMQ.AddBatchConsumer(&cfg.RabbitConfig,
+	rabbitMQ.SetHandler(
 		cfg.UsersQueue,
 		cfg.UsersExchange,
-		usersMessagesHandler)
+		usersMessagesHandler,
+	)
 	if err != nil {
 		return fmt.Errorf("[ConsumeRabbitMessages] create users rabbitmq consumer: %w", err)
 	}
+
+	rabbitMQ.Run()
+
+	select {}
 
 	return nil
 }

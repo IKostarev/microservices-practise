@@ -8,12 +8,13 @@ COPY app /build/app
 COPY cmd /build/cmd
 COPY config /build/config
 COPY internal /build/internal
+COPY pkg /build/pkg
 
 COPY go.mod /build/
 COPY go.sum /build/
 
 RUN go mod download && \
-    go build -o cmd/todo ./cmd/main.go && \
+    go build -o cmd/todo ./cmd/todo/main.go && \
     chmod +x cmd/todo
 
 ENTRYPOINT ["cmd/todo"]

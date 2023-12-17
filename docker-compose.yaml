@@ -26,9 +26,9 @@ services:
   postgres:
     image: postgres:15.2-alpine
     environment:
-      POSTGRES_DB: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ibs_test
+      POSTGRES_USER: ibs_test
+      POSTGRES_PASSWORD: ibs_test
       POSTGRES_PORT: 5432
     ports:
       - "5431:5432"

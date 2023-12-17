@@ -13,10 +13,8 @@ type LoggerConfig struct {
 }
 
 func NewLogger(cfg LoggerConfig) *zerolog.Logger {
-
 	logger := log.With().Str("service", cfg.LogIndex).Logger()
 
-	// Установим уровень логирования на основе IsDebug.
 	if cfg.IsDebug {
 		logger = logger.Level(zerolog.DebugLevel)
 	} else {
@@ -30,7 +28,6 @@ func NewLogger(cfg LoggerConfig) *zerolog.Logger {
 		}
 		logger = logger.Output(file)
 	} else {
-
 		logger = logger.Output(zerolog.ConsoleWriter{Out: os.Stdout})
 	}
 

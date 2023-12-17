@@ -1,4 +1,4 @@
-package smtp
+package smtp_client
 
 type SmtpConfig struct {
 	Host     string `envconfig:"SMTP_HOST" default:"smtp.mail.ru"`

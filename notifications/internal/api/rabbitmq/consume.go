@@ -1,15 +1,17 @@
 package rabbitmq
 
 import (
+	"context"
 	"fmt"
 	"github.com/rs/zerolog"
 	"notifications/config"
 	"notifications/internal/service"
 	rabbitConsumer "notifications/pkg/rabbitmq/consumer"
-	"notifications/pkg/smtp"
+	"notifications/pkg/smtp_client"
 )
 
 func ConsumeRabbitMessages(
+	ctx context.Context,
 	cfg *config.Config,
 	logger *zerolog.Logger,
 ) error {
@@ -19,8 +21,8 @@ func ConsumeRabbitMessages(
 		return fmt.Errorf("[ConsumeRabbitMessages] connection to rabbitmq %w", err)
 	}
 
-	smtpClient := smtp.NewSmtpClient(cfg.SmtpConfig)
-	usersService := service.NewUsersService(smtpClient)
+	smtpClient := smtp_client.NewSmtpClient(cfg.SmtpConfig)
+	usersService := service.NewUsersService(logger, smtpClient)
 	usersMessagesHandler := NewUsersMessagesHandler(logger, usersService)
 
 	rabbitMQ.SetHandler(
@@ -34,7 +36,8 @@ func ConsumeRabbitMessages(
 
 	rabbitMQ.Run()
 
-	select {}
+	<-ctx.Done()
+	logger.Info().Msg("[ConsumeRabbitMessages] shutting down message consumption")
 
-	return nil
+	return ctx.Err()
 }

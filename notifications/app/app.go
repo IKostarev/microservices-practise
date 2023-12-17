@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"golang.org/x/sync/errgroup"
 	"notifications/config"
@@ -28,8 +29,7 @@ func (a *App) RunAPI() error {
 	group := new(errgroup.Group)
 
 	group.Go(func() error {
-		err := rabbitmq.ConsumeRabbitMessages(a.cfg, a.logger)
-		return fmt.Errorf("[RunApp] run rabbit consumer: %w", err)
+		return rabbitmq.ConsumeRabbitMessages(context.Background(), a.cfg, a.logger)
 	})
 
 	if err := group.Wait(); err != nil {

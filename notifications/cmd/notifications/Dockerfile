@@ -9,10 +9,10 @@ ENV LOG_INDEX=notifications
 ENV LOG_IS_DEBUG=false
 ENV LOG_TO_FILE=false
 
-ENV SMTP_HOST=smtp.mail.ru
-ENV SMTP_PORT=465
-ENV SMTP_USER=notifications
-ENV SMTP_PASSWORD=notifications
+ENV SMTP_HOST=smtp.yandex.ru
+ENV SMTP_PORT=25
+ENV SMTP_USER=course.notifications@yandex.ru
+ENV SMTP_PASSWORD=ulyakmzpjokpcpiz
 
 ENV RABBITMQ_USER=notifications
 ENV RABBITMQ_PASSWORD=notifications
@@ -43,3 +43,5 @@ ENTRYPOINT ["cmd/notifications/notifications"]
 # открываем порты из образа
 EXPOSE 5672/tcp
 EXPOSE 465/tcp
+
+

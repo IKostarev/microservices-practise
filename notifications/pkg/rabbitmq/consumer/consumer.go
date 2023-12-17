@@ -145,7 +145,7 @@ func (c *Consumer) SetHandler(queueName, exchangeName string, handler Handler) {
 	}
 }
 
-func (c *Consumer) Consume(queueName, exchangeName, exchangeType string, queueDurable, exchangeDurable bool) error {
+func (c *Consumer) Consume(queueName, exchangeName string) error {
 	go func() {
 		c.mu.Lock()
 		ch, err := c.MakeChannel()
@@ -157,8 +157,8 @@ func (c *Consumer) Consume(queueName, exchangeName, exchangeType string, queueDu
 
 		err = ch.ExchangeDeclare(
 			exchangeName,
-			exchangeType,
-			exchangeDurable,
+			"topic",
+			true,
 			false,
 			false,
 			false,
@@ -169,9 +169,9 @@ func (c *Consumer) Consume(queueName, exchangeName, exchangeType string, queueDu
 			return
 		}
 
-		_, err = ch.QueueDeclare(
+		q, err := ch.QueueDeclare(
 			queueName,
-			queueDurable,
+			true,
 			false,
 			false,
 			false,
@@ -183,8 +183,8 @@ func (c *Consumer) Consume(queueName, exchangeName, exchangeType string, queueDu
 		}
 
 		err = ch.QueueBind(
+			q.Name,
 			queueName,
-			"",
 			exchangeName,
 			false,
 			nil,
@@ -221,7 +221,8 @@ func (c *Consumer) Consume(queueName, exchangeName, exchangeType string, queueDu
 
 func (c *Consumer) Run() {
 	for _, cfg := range c.handlers {
-		err := c.Consume(cfg.queue, cfg.exchange, "direct", true, true)
+		c.logger.Info().Msgf("running consumer for queue %s exchange %s", cfg.exchange, cfg.queue)
+		err := c.Consume(cfg.queue, cfg.exchange)
 		if err != nil {
 			c.logger.Error().Msgf("Error setting up consumer for queue %s: %s", cfg.queue, err)
 		}

@@ -4,16 +4,16 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"notifications/pkg/logging"
 	rabbitConfig "notifications/pkg/rabbitmq"
-	"notifications/pkg/smtp"
+	"notifications/pkg/smtp_client"
 )
 
 type Config struct {
-	App           App                               `envconfig:"APP"`
-	Logging       logging.LoggerConfig              `envconfig:"LOG"`
-	SmtpConfig    smtp.SmtpConfig                   `envconfig:"SMTP"`
-	RabbitConfig  rabbitConfig.RabbitConsumerConfig `envconfig:"RABBITMQ"`
-	UsersExchange string                            `envconfig:"RABBITMQ_USERS_EXCHANGE" default:"users.exchange"`
-	UsersQueue    string                            `envconfig:"RABBITMQ_USERS_QUEUE" default:"users.queue"`
+	App           App                       `envconfig:"APP"`
+	Logging       logging.LoggerConfig      `envconfig:"LOG"`
+	SmtpConfig    smtp_client.SmtpConfig    `envconfig:"SMTP"`
+	RabbitConfig  rabbitConfig.RabbitConfig `envconfig:"RABBITMQ"`
+	UsersExchange string                    `envconfig:"RABBITMQ_USERS_EXCHANGE" default:"users.exchange"`
+	UsersQueue    string                    `envconfig:"RABBITMQ_USERS_QUEUE" default:"users.queue"`
 }
 
 type App struct {

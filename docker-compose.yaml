@@ -8,6 +8,7 @@ services:
       - "3000:3000"
     depends_on:
       - users-service
+      - todo-service
   users-service:
     build:
       context: ./users
@@ -17,12 +18,15 @@ services:
       - "50000:50000"
     depends_on:
       - postgres
-  #  todo:
-  #    build:
-  #      context: ./todo
-  #      dockerfile: ./Dockerfile
-  #    ports:
-  #      - "3002:3002"
+  todo-service:
+    build:
+      context: ./todo
+      dockerfile: ./cmd/todo/Dockerfile
+    ports:
+      - "3002:3000"
+      - "50001:50001"
+    depends_on:
+      - postgres
   postgres:
     image: postgres:15.2-alpine
     environment:

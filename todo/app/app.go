@@ -1,11 +1,14 @@
 package app
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
-	"net/http"
+	"golang.org/x/sync/errgroup"
 	"todo/config"
-	"todo/internal/handlers"
+	"todo/internal/api"
+	"todo/internal/api/grpc"
+	"todo/internal/api/rest"
 	"todo/internal/repository"
 	"todo/internal/service"
 	"todo/pkg/db/postgres"
@@ -13,44 +16,46 @@ import (
 )
 
 type App struct {
-	cfg    *config.Config
-	router *mux.Router
-	logger *zerolog.Logger
+	cfg         *config.Config
+	router      *mux.Router
+	logger      *zerolog.Logger
+	todoService api.TodoService
 }
 
-func NewApp(cfg *config.Config) *App {
-	return &App{
-		cfg:    cfg,
-		logger: logger.NewLogger(cfg.Logger),
-	}
-}
-
-func (a *App) RunAPI() error {
-	conn, err := postgres.NewPostgres(&a.cfg.Database)
+func NewApp(cfg *config.Config) (*App, error) {
+	conn, err := postgres.NewPostgres(&cfg.Database)
 	if err != nil {
-		a.logger.Err(err).Msgf("[RunAPI] db conn: %w\n", err)
-		return err
+		return nil, err
 	}
 	defer conn.Close()
 
 	repo := repository.NewTodoRepository(conn)
+
 	serv := service.NewTodoService(repo)
 
-	todoHandler := handlers.NewTodoHandler(serv, a.logger)
+	log := logger.NewLogger(cfg.Logger)
 
-	a.router = mux.NewRouter()
+	return &App{
+		cfg:         cfg,
+		logger:      log,
+		todoService: serv,
+	}, nil
+}
 
-	r := a.router.PathPrefix("/api/v1/todos").Subrouter()
+func (a *App) RunApp() error {
+	group := new(errgroup.Group)
+	group.Go(func() error {
+		err := rest.NewRestAPI(a.cfg, a.logger, a.todoService)
+		return fmt.Errorf("[RunApp] run REST: %w", err)
+	})
 
-	r.HandleFunc("/", todoHandler.CreateToDoHandler).Methods(http.MethodPost)
-	r.HandleFunc("/batch", todoHandler.GetToDosHandler).Methods(http.MethodGet)
-	r.HandleFunc("/{id}", todoHandler.GetToDoHandler).Methods(http.MethodGet)
-	r.HandleFunc("/{id}", todoHandler.UpdateToDoHandler).Methods(http.MethodPut)
-	r.HandleFunc("/{id}", todoHandler.DeleteToDoHandler).Methods(http.MethodDelete)
+	group.Go(func() error {
+		err := grpc.NewGrpcAPI(a.cfg, a.logger, a.todoService)
+		return fmt.Errorf("[RunApp] run GRPC: %w", err)
+	})
 
-	if err = http.ListenAndServe(a.cfg.App.AppPort, a.router); err != nil {
-		a.logger.Err(err).Msgf("ListenAndServe error is - %s\n", err)
-		return err
+	if err := group.Wait(); err != nil {
+		return fmt.Errorf("[RunApp] run: %w", err)
 	}
 
 	return nil

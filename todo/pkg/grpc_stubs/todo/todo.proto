@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+option go_package = "todo/api/protos/todo";
+
+package todo_service;
+
+message TodoID {
+  string id = 1;
+}
+
+message TodoIn {
+  int32 CreatedBy = 1;
+  int32 Assignee = 2;
+  string Description = 3;
+}
+
+message TodoOut {
+  string Id = 1;
+  int32 CreatedBy = 2;
+  int32 Assignee = 3;
+  int64 CreatedAt = 4;
+  int64 UpdatedAt = 5;
+  string Description = 6;
+}
+
+message TodoUpdate {
+  string Id = 1;
+  int32 CreatedBy = 2;
+  int32 Assignee = 3;
+  string Description = 4;
+}
+
+message TodoFilter {
+  int32 CreatedBy = 1;
+  int32 Assignee = 2;
+  string DateFrom = 4;
+  string DateTo = 5;
+}
+
+message TodosOut {
+  repeated TodoOut todos = 1;
+}
+
+service TodoService {
+  rpc CreateTodo(TodoIn) returns (TodoID);
+  rpc UpdateTodo(TodoUpdate) returns (google.protobuf.Empty);
+  rpc GetTodo(TodoID) returns (TodoOut);
+  rpc GetTodos(TodoFilter) returns (TodosOut);
+  rpc DeleteTodo(TodoID) returns (google.protobuf.Empty);
+}

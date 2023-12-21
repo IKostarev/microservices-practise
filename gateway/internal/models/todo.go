@@ -1,6 +1,7 @@
 package models
 
 import (
+	"gateway/pkg/grpc_stubs/todo"
 	"github.com/google/uuid"
 	"time"
 )
@@ -19,4 +20,12 @@ type GetTodosDTO struct {
 	Assignee  int       `json:"assignee" example:"2"`
 	DateFrom  time.Time `json:"date_from"`
 	DateTo    time.Time `json:"date_to"`
+}
+
+func (t *TodoDTO) ToRPC() *todo.TodoIn {
+	return &todo.TodoIn{
+		CreatedBy:   int32(t.CreatedBy),
+		Assignee:    int32(t.Assignee),
+		Description: t.Description,
+	}
 }

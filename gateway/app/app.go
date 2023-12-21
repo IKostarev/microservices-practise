@@ -23,7 +23,11 @@ type App struct {
 func NewApp(cfg *config.Config) (*App, error) {
 	logger := logging.NewLogger(cfg.Logging)
 
-	todosClient := todos.NewTodosClient()
+	todosClient, err := todos.NewTodosClient(cfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("[NewApp] grpc todo: %w", err)
+	}
+
 	usersClient, err := users.NewUsersClient(cfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("[NewApp] grpc users: %w", err)

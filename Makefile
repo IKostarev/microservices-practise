@@ -1,9 +1,10 @@
 up:
 	docker-compose -f docker-compose.yaml down -v
 	docker-compose -f docker-compose.yaml up -d postgres
-	docker-compose -f docker-compose.yaml up --build migrate-users
+	docker-compose -f docker-compose.yaml up --build migrate-users migrate-todo
 	docker-compose -f docker-compose.yaml up -d users-service
 	docker-compose -f docker-compose.yaml up -d gateway-service
+	docker-compose -f docker-compose.yaml up -d todo-service
 	docker-compose -f docker-compose.yaml ps
 
 down:
@@ -22,3 +23,17 @@ generate-users:
 
 	mkdir -p gateway/pkg/grpc_stubs/users
 	cp -r api/protos/users/* gateway/pkg/grpc_stubs/users
+
+generate-todo:
+	protoc -I api/protos/todo \
+			--go_out=api/protos/todo \
+			--go_opt=paths=source_relative \
+			--go-grpc_out=api/protos/todo \
+			--go-grpc_opt=paths=source_relative \
+			api/protos/todo/todo.proto
+
+	mkdir -p todo/pkg/grpc_stubs/todo
+	cp -r api/protos/todo/* todo/pkg/grpc_stubs/todo
+
+	mkdir -p gateway/pkg/grpc_stubs/todo
+	cp -r -r api/protos/todo/* gateway/pkg/grpc_stubs/todo

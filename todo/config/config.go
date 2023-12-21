@@ -15,11 +15,17 @@ type Config struct {
 	App        App                 `envconfig:"APP"`
 	Logger     logger.LoggerConfig `envconfig:"LOGGER"`
 	Database   postgres.PostgreSQL `envconfig:"POSTGRES"`
+	Grpc       GrpcServerConfig    `envconfig:"GRPC"`
 	Migrations MigrationsConfig
 }
 
 type MigrationsConfig struct {
 	Postgres postgres.PostgreSQL `envconfig:"POSTGRES"`
+}
+
+type GrpcServerConfig struct {
+	Host string `envconfig:"HOST" required:"true" required:"true" default:"0.0.0.0"`
+	Port string `envconfig:"PORT" required:"true" required:"true" default:"50001"`
 }
 
 func LoadConfig() *Config {

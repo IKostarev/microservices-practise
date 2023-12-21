@@ -1,4 +1,4 @@
-package handlers
+package rest
 
 import (
 	"encoding/json"
@@ -6,15 +6,16 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 	"net/http"
+	"todo/internal/api"
 	"todo/internal/models"
 )
 
 type TodoHandler struct {
-	todoService TodoService
+	todoService api.TodoService
 	logger      *zerolog.Logger
 }
 
-func NewTodoHandler(todoService TodoService, logger *zerolog.Logger) *TodoHandler {
+func NewTodoHandler(todoService api.TodoService, logger *zerolog.Logger) *TodoHandler {
 	return &TodoHandler{
 		todoService: todoService,
 		logger:      logger,
@@ -31,7 +32,7 @@ func (h *TodoHandler) CreateToDoHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	todoID, err := h.todoService.CreateToDo(ctx, newTodo)
+	todoID, err := h.todoService.CreateToDo(ctx, (*models.TodoDAO)(newTodo))
 	if err != nil {
 		h.logger.Err(err).Msg("[CreateToDoHandler] error create")
 		h.JSONErrorRespond(w, InternalServerError)
@@ -86,7 +87,7 @@ func (h *TodoHandler) UpdateToDoHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err := h.todoService.UpdateToDo(ctx, updTodo)
+	err := h.todoService.UpdateToDo(ctx, (*models.TodoDAO)(updTodo))
 	if err != nil {
 		h.logger.Err(err).Msg("[UpdateToDoHandler] error update todo")
 		h.JSONErrorRespond(w, InternalServerError)

@@ -32,7 +32,7 @@ func (h *TodoHandler) CreateToDoHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	todoID, err := h.todoService.CreateToDo(ctx, (*models.TodoDAO)(newTodo))
+	todoID, err := h.todoService.CreateToDo(ctx, newTodo)
 	if err != nil {
 		h.logger.Err(err).Msg("[CreateToDoHandler] error create")
 		h.JSONErrorRespond(w, InternalServerError)
@@ -87,7 +87,7 @@ func (h *TodoHandler) UpdateToDoHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err := h.todoService.UpdateToDo(ctx, (*models.TodoDAO)(updTodo))
+	err := h.todoService.UpdateToDo(ctx, updTodo)
 	if err != nil {
 		h.logger.Err(err).Msg("[UpdateToDoHandler] error update todo")
 		h.JSONErrorRespond(w, InternalServerError)

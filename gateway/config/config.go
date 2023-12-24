@@ -27,7 +27,7 @@ type UsersClient struct {
 
 type TodosClient struct {
 	AppHost     string `envconfig:"TODOS_HOST" required:"true" default:"0.0.0.0"`
-	AppRestPort string `envconfig:"TODOS_REST_PORT" required:"true" default:"3001"`
+	AppRestPort string `envconfig:"TODOS_REST_PORT" required:"true" default:"3000"`
 	AppGrpcPort string `envconfig:"TODOS_GRPC_PORT" required:"true" default:"50001"`
 }
 

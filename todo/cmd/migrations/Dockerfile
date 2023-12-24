@@ -1,24 +1,17 @@
-FROM golang:1.21
+FROM golang:1.21 as builder
 
-WORKDIR /build
+WORKDIR /usr/local/src
 
-ENV POSTGRES_HOST=postgres
-ENV POSTGRES_PORT=5430
-ENV POSTGRES_USER=ibs_test
-ENV POSTGRES_PASSWORD=ibs_test
-ENV POSTGRES_DBNAME=ibs_test
+COPY ["go.mod", "go.sum", "./"]
+RUN go mod download
 
-COPY app /build/app
-COPY cmd /build/cmd
-COPY config /build/config
-COPY internal /build/internal
-COPY pkg /build/pkg
+COPY ./ ./
 
-COPY go.mod /build/
-COPY go.sum /build/
+RUN go build -o ./bin/app cmd/migrations/main.go
 
-RUN go mod download && \
-        go build -o cmd/migrations ./cmd/migrations/main.go && \
-        chmod +x cmd/migrations
 
-CMD ["cmd/migrations"]
+FROM alpine:3.15
+
+COPY --from=builder /usr/local/src/bin/app /
+
+CMD ["/app"]

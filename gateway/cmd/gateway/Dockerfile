@@ -16,7 +16,6 @@ ENV USERS_REST_PORT=3000
 ENV USERS_GRPC_PORT=50000
 
 ENV TODOS_HOST=todos-service
-ENV TODOS_REST_PORT=3001
 ENV TODOS_GRPC_PORT=50001
 
 # копируем файлы приложения в рабочую папку образа

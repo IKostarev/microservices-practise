@@ -9,8 +9,12 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
-	app := app.NewApp(cfg)
-	if err := app.RunAPI(); err != nil {
+	app, err := app.NewApp(cfg)
+	if err != nil {
+		log.Fatalf("Init new app have error is - %s\n", err)
+	}
+
+	if err = app.RunApp(); err != nil {
 		log.Fatalf("Started application RunAPI have error is - %s\n", err)
 	}
 }

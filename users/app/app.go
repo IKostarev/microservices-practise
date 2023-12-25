@@ -13,18 +13,22 @@ import (
 	"users/internal/service"
 	"users/pkg/logging"
 	"users/pkg/postgresql"
+	"users/pkg/rabbitmq/producer"
 )
 
 type App struct {
-	cfg         *config.Config
-	logger      *zerolog.Logger
-	router      *mux.Router
-	userService api.UserService
+	cfg              *config.Config
+	logger           *zerolog.Logger
+	router           *mux.Router
+	userService      api.UserService
+	rabbitmqProducer *producer.Producer
 }
 
 func NewApp(
 	cfg *config.Config,
 ) (*App, error) {
+	logger := logging.NewLogger(cfg.Logging)
+
 	// подключимся к базе данных
 	databaseConn, err := postgresql.NewPgxConn(&cfg.Postgres)
 	if err != nil {
@@ -34,10 +38,19 @@ func NewApp(
 	// передадим подключение к базе данных констуктору репозитория
 	userRepo := repository.NewUserRepository(databaseConn)
 
-	// передадим реализацию репозитория конструктору сервиса
-	userService := service.NewUserService(&cfg.Password, userRepo)
+	// запустим rabbit mq продьюсер
+	usersProducer, err := producer.New(
+		&cfg.RabbitConfig,
+		cfg.UsersExchange,
+		cfg.UsersQueue,
+		logger,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("start rabbit producer: %w", err)
+	}
 
-	logger := logging.NewLogger(cfg.Logging)
+	// передадим реализацию репозитория и продьюсера rabbit mq конструктору сервиса
+	userService := service.NewUserService(&cfg.Password, userRepo, usersProducer)
 
 	return &App{
 		cfg:         cfg,

@@ -6,7 +6,7 @@ Content-Type: application/json
   "username": "epopov",
   "password": "epopov",
   "password_confirmation": "epopov",
-  "email": "epopov@example.com"
+  "email": "ep.egor.popov@gmail.com"
 }
 
 ### Send POST request with json body

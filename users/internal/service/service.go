@@ -6,6 +6,7 @@ import (
 	"crypto/subtle"
 	"database/sql"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"golang.org/x/crypto/argon2"
@@ -16,17 +17,20 @@ import (
 )
 
 type UserService struct {
-	passConfig *config.PasswordConfig
-	userRepo   UserRepository
+	passConfig         *config.PasswordConfig
+	userRepo           UserRepository
+	userRabbitProducer RabbitProducer
 }
 
 func NewUserService(
 	passwordConfig *config.PasswordConfig,
 	userRepo UserRepository,
+	userRabbitProducer RabbitProducer,
 ) *UserService {
 	return &UserService{
-		passConfig: passwordConfig,
-		userRepo:   userRepo,
+		passConfig:         passwordConfig,
+		userRepo:           userRepo,
+		userRabbitProducer: userRabbitProducer,
 	}
 }
 
@@ -57,6 +61,20 @@ func (s *UserService) RegisterUser(ctx context.Context, newUser *models.CreateUs
 	userID, err := s.userRepo.CreateUser(ctx, newUser)
 	if err != nil {
 		return 0, fmt.Errorf("[RegisterUser] store user:%w", err)
+	}
+
+	data, err := json.Marshal(models.UserMailItem{
+		UserEventType: models.UserEventTypeEmailVerification,
+		Receivers:     []string{newUser.Email},
+		Link:          "example.com/verify",
+	})
+	if err != nil {
+		return 0, fmt.Errorf("[RegisterUser] marshal email verification letter mssg:%w", err)
+	}
+
+	err = s.userRabbitProducer.Publish(data)
+	if err != nil {
+		return 0, fmt.Errorf("[RegisterUser] publish email verification letter mssg:%w", err)
 	}
 
 	// возвращаем данные в слой хэндлера

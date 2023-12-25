@@ -1,9 +1,10 @@
 up:
 	docker-compose -f docker-compose.yaml down -v
-	docker-compose -f docker-compose.yaml up -d postgres
+	docker-compose -f docker-compose.yaml up -d postgres rabbitmq
 	docker-compose -f docker-compose.yaml up --build migrate-users
 	docker-compose -f docker-compose.yaml up -d users-service
 	docker-compose -f docker-compose.yaml up -d gateway-service
+	docker-compose -f docker-compose.yaml up -d notifications-service
 	docker-compose -f docker-compose.yaml ps
 
 down:

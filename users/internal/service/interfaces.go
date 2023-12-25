@@ -16,5 +16,5 @@ type UserRepository interface {
 }
 
 type RabbitProducer interface {
-	Publish(data []byte) (err error)
+	Publish(data []byte, reqesID string) (err error)
 }

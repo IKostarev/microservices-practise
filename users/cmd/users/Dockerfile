@@ -22,6 +22,9 @@ ENV RABBITMQ_PASSWORD=notifications
 ENV RABBITMQ_HOST=rabbitmq
 ENV RABBITMQ_PORT=5672
 
+ENV JAEGER_HOST=jaeger:6831
+ENV JAEGER_LOG_SPANS=true
+
 # копируем файлы приложения в рабочую папку образа
 COPY app /build/app
 COPY cmd /build/cmd

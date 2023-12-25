@@ -15,6 +15,9 @@ ENV USERS_HOST=users-service
 ENV USERS_REST_PORT=3000
 ENV USERS_GRPC_PORT=50000
 
+ENV JAEGER_HOST=jaeger:6831
+ENV JAEGER_LOG_SPANS=true
+
 # копируем файлы приложения в рабочую папку образа
 COPY app /build/app
 COPY cmd /build/cmd

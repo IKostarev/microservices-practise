@@ -6,9 +6,13 @@ import (
 	"gateway/internal/app_errors"
 	"gateway/internal/models"
 	"gateway/pkg/ctxutil"
+	"github.com/opentracing/opentracing-go"
 )
 
 func (s *GatewayService) RegisterUser(ctx context.Context, newUser *models.CreateUserDTO) (int, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.RegisterUser")
+	defer span.Finish()
+
 	// Передаем данные в слой репозитория для сохранения пользователя.
 	userID, err := s.usersServiceClient.CreateUser(ctx, newUser)
 	if err != nil {
@@ -20,6 +24,9 @@ func (s *GatewayService) RegisterUser(ctx context.Context, newUser *models.Creat
 }
 
 func (s *GatewayService) UpdateUser(ctx context.Context, updatedUser *models.UserDTO) (*models.UserDTO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.UpdateUser")
+	defer span.Finish()
+
 	senderID, ok := ctxutil.GetUserIDFromContext(ctx)
 	if !ok {
 		return nil, app_errors.ErrNoUserInContext
@@ -40,6 +47,9 @@ func (s *GatewayService) UpdateUser(ctx context.Context, updatedUser *models.Use
 }
 
 func (s *GatewayService) UpdatePassword(ctx context.Context, request *models.UpdateUserPasswordDTO) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.UpdatePassword")
+	defer span.Finish()
+
 	senderID, ok := ctxutil.GetUserIDFromContext(ctx)
 	if !ok {
 		return app_errors.ErrNoUserInContext
@@ -60,6 +70,9 @@ func (s *GatewayService) UpdatePassword(ctx context.Context, request *models.Upd
 }
 
 func (s *GatewayService) DeleteUser(ctx context.Context, userID int) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.DeleteUser")
+	defer span.Finish()
+
 	senderID, ok := ctxutil.GetUserIDFromContext(ctx)
 	if !ok {
 		return app_errors.ErrNoUserInContext
@@ -79,6 +92,9 @@ func (s *GatewayService) DeleteUser(ctx context.Context, userID int) error {
 }
 
 func (s *GatewayService) GetUserByID(ctx context.Context, userID int) (*models.UserDTO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetUserByID")
+	defer span.Finish()
+
 	// Получение пользователя по его идентификатору.
 	storedUser, err := s.usersServiceClient.GetUserByID(ctx, userID)
 	if err != nil {
@@ -90,6 +106,9 @@ func (s *GatewayService) GetUserByID(ctx context.Context, userID int) (*models.U
 }
 
 func (s *GatewayService) Login(ctx context.Context, login *models.UserLoginDTO) (*models.UserTokens, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.Login")
+	defer span.Finish()
+
 	// Проверка наличия пользователя.
 	existingUser, err := s.usersServiceClient.UserLogin(ctx, login)
 	if err != nil {
@@ -114,6 +133,9 @@ func (s *GatewayService) Login(ctx context.Context, login *models.UserLoginDTO) 
 }
 
 func (s *GatewayService) Refresh(ctx context.Context, refresh string) (*models.UserTokens, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.Refresh")
+	defer span.Finish()
+
 	userID, err := s.jwtUtil.VerifyToken(refresh)
 	if err != nil {
 		return nil, fmt.Errorf("[Refresh] verify token:%w", err)

@@ -176,7 +176,7 @@ func (p *Producer) MakeChannel() (*amqp.Channel, error) {
 	return ch, nil
 }
 
-func (p *Producer) Publish(data []byte) (err error) {
+func (p *Producer) Publish(data []byte, requestID string) (err error) {
 	for attempt := 1; attempt <= p.maxRetryAttempt; attempt++ {
 		// possible when reconnecting
 		if p.publishingChan == nil {
@@ -194,6 +194,7 @@ func (p *Producer) Publish(data []byte) (err error) {
 				DeliveryMode: amqp.Persistent,
 				ContentType:  "application/json",
 				Body:         data,
+				Headers:      amqp.Table{"requestId": requestID},
 			})
 		if err != nil {
 			time.Sleep(time.Duration(attempt*attempt) * time.Second)

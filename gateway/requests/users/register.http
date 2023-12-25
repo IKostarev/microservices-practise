@@ -19,3 +19,4 @@ Content-Type: application/json
   "password_confirmation": "epopov",
   "email": "epopov@example.com"
 }
+

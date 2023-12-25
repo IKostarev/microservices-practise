@@ -1,6 +1,7 @@
 package config
 
 import (
+	"gateway/pkg/jaeger"
 	"gateway/pkg/jwtutil"
 	"gateway/pkg/logging"
 	"github.com/kelseyhightower/envconfig"
@@ -10,6 +11,7 @@ type Config struct {
 	App         App                  `envconfig:"APP"`
 	JWT         jwtutil.JWTUtil      `envconfig:"JWT"`
 	Logging     logging.LoggerConfig `envconfig:"LOG"`
+	Jaeger      jaeger.JaegerConfig  `envconfig:"JAEGER"`
 	UsersClient UsersClient          `envconfig:"USERS"`
 	TodosClient TodosClient          `envconfig:"TODOS"`
 }

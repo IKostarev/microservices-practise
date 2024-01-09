@@ -2,7 +2,7 @@ package postgresql
 
 import "time"
 
-// PostgreSQL config
+// PostgreSQL config.go
 type PostgreSQL struct {
 	PostgresqlHost     string        `envconfig:"POSTGRES_HOST" default:"localhost"`
 	PostgresqlPort     string        `envconfig:"POSTGRES_PORT" default:"5432"`

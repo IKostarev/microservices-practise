@@ -6,31 +6,40 @@ import (
 	"crypto/subtle"
 	"database/sql"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/opentracing/opentracing-go"
 	"golang.org/x/crypto/argon2"
 	"strings"
 	"users/config"
 	appErrors "users/internal/app_errors"
 	"users/internal/models"
+	"users/pkg/ctxutil"
 )
 
 type UserService struct {
-	passConfig *config.PasswordConfig
-	userRepo   UserRepository
+	passConfig         *config.PasswordConfig
+	userRepo           UserRepository
+	userRabbitProducer RabbitProducer
 }
 
 func NewUserService(
 	passwordConfig *config.PasswordConfig,
 	userRepo UserRepository,
+	userRabbitProducer RabbitProducer,
 ) *UserService {
 	return &UserService{
-		passConfig: passwordConfig,
-		userRepo:   userRepo,
+		passConfig:         passwordConfig,
+		userRepo:           userRepo,
+		userRabbitProducer: userRabbitProducer,
 	}
 }
 
 func (s *UserService) RegisterUser(ctx context.Context, newUser *models.CreateUserDTO) (int, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.RegisterUser")
+	defer span.Finish()
+
 	// Проверка наличия пользователя с таким же именем или мэйлом.
 	_, err := s.userRepo.GetUserByUsernameOrEmail(ctx, newUser.Username, newUser.Email)
 	if err == nil {
@@ -45,7 +54,7 @@ func (s *UserService) RegisterUser(ctx context.Context, newUser *models.CreateUs
 	}
 
 	// Хеширование пароля - никогда не храните пароль в незашифрованном виде.
-	hashedPassword, err := GeneratePassword(s.passConfig, newUser.Password)
+	hashedPassword, err := GeneratePassword(ctx, s.passConfig, newUser.Password)
 	if err != nil {
 		return 0, fmt.Errorf("[RegisterUser] generate pass: %w", err)
 	}
@@ -59,11 +68,29 @@ func (s *UserService) RegisterUser(ctx context.Context, newUser *models.CreateUs
 		return 0, fmt.Errorf("[RegisterUser] store user:%w", err)
 	}
 
+	data, err := json.Marshal(models.UserMailItem{
+		UserEventType: models.UserEventTypeEmailVerification,
+		Receivers:     []string{newUser.Email},
+		Link:          "example.com/verify",
+	})
+	if err != nil {
+		return 0, fmt.Errorf("[RegisterUser] marshal email verification letter mssg:%w", err)
+	}
+
+	requestID, _ := ctxutil.GetRequestIDFromContext(ctx)
+	err = s.userRabbitProducer.Publish(data, requestID)
+	if err != nil {
+		return 0, fmt.Errorf("[RegisterUser] publish email verification letter mssg:%w", err)
+	}
+
 	// возвращаем данные в слой хэндлера
 	return userID, nil
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, updatedUser *models.UserDTO) (*models.UserDTO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.UpdateUser")
+	defer span.Finish()
+
 	// Проверка наличия пользователя.
 	existingUser, err := s.userRepo.GetUserByID(ctx, updatedUser.ID)
 	if err != nil {
@@ -84,6 +111,9 @@ func (s *UserService) UpdateUser(ctx context.Context, updatedUser *models.UserDT
 }
 
 func (s *UserService) UpdatePassword(ctx context.Context, request *models.UpdateUserPasswordDTO) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.UpdatePassword")
+	defer span.Finish()
+
 	// Проверка наличия пользователя.
 	existingUser, err := s.userRepo.GetUserByID(ctx, request.ID)
 	if err != nil {
@@ -96,7 +126,7 @@ func (s *UserService) UpdatePassword(ctx context.Context, request *models.Update
 	}
 
 	// Проверка старого пароля.
-	passMatch, err := ComparePassword(request.OldPassword, existingUser.Password)
+	passMatch, err := ComparePassword(ctx, request.OldPassword, existingUser.Password)
 	if err != nil {
 		return fmt.Errorf("[UpdatePassword] verify pass:%w", err)
 	}
@@ -105,7 +135,7 @@ func (s *UserService) UpdatePassword(ctx context.Context, request *models.Update
 	}
 
 	// Хеширование пароля.
-	hashedPassword, err := GeneratePassword(s.passConfig, request.Password)
+	hashedPassword, err := GeneratePassword(ctx, s.passConfig, request.Password)
 	if err != nil {
 		return fmt.Errorf("[UpdatePassword] verify pass:%w", err)
 	}
@@ -121,6 +151,9 @@ func (s *UserService) UpdatePassword(ctx context.Context, request *models.Update
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, userID int) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.DeleteUser")
+	defer span.Finish()
+
 	// Удаление пользователя.
 	err := s.userRepo.DeleteUser(ctx, userID)
 	if err != nil {
@@ -131,6 +164,9 @@ func (s *UserService) DeleteUser(ctx context.Context, userID int) error {
 }
 
 func (s *UserService) GetUserByID(ctx context.Context, userID int) (*models.UserDTO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetUserByID")
+	defer span.Finish()
+
 	// Получение пользователя по его идентификатору.
 	var userResponse = new(models.UserDTO)
 	storedUser, err := s.userRepo.GetUserByID(ctx, userID)
@@ -152,6 +188,9 @@ func (s *UserService) GetUserByID(ctx context.Context, userID int) (*models.User
 }
 
 func (s *UserService) GetUserByUsernameOrEmail(ctx context.Context, name, email string) (*models.UserDTO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetUserByUsernameOrEmail")
+	defer span.Finish()
+
 	// Получение пользователя по его идентификатору.
 	var userResponse = new(models.UserDTO)
 	storedUser, err := s.userRepo.GetUserByUsernameOrEmail(ctx, name, email)
@@ -173,6 +212,9 @@ func (s *UserService) GetUserByUsernameOrEmail(ctx context.Context, name, email 
 }
 
 func (s *UserService) Login(ctx context.Context, login *models.UserLoginDTO) (*models.UserDTO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.Login")
+	defer span.Finish()
+
 	// Проверка наличия пользователя.
 	existingUser, err := s.userRepo.GetUserByUsernameOrEmail(ctx, login.Username, login.Email)
 	if err != nil {
@@ -183,7 +225,7 @@ func (s *UserService) Login(ctx context.Context, login *models.UserLoginDTO) (*m
 	}
 
 	// Проверка пароля
-	passMatch, err := ComparePassword(login.Password, existingUser.Password)
+	passMatch, err := ComparePassword(ctx, login.Password, existingUser.Password)
 	if err != nil {
 		return nil, fmt.Errorf("[Login] verify pass:%w", err)
 	}
@@ -200,7 +242,10 @@ func (s *UserService) Login(ctx context.Context, login *models.UserLoginDTO) (*m
 }
 
 // GeneratePassword создает пароль на основе библиотеки golang.org/x/crypto/argon2
-func GeneratePassword(c *config.PasswordConfig, password string) (string, error) {
+func GeneratePassword(ctx context.Context, c *config.PasswordConfig, password string) (string, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "GeneratePassword")
+	defer span.Finish()
+
 	salt := make([]byte, 16)
 	if _, err := rand.Read(salt); err != nil {
 		return "", err
@@ -218,7 +263,9 @@ func GeneratePassword(c *config.PasswordConfig, password string) (string, error)
 }
 
 // ComparePassword сравниваем пароль и переданный хэш пароля на основе библиотеки golang.org/x/crypto/argon2
-func ComparePassword(password, hash string) (bool, error) {
+func ComparePassword(ctx context.Context, password, hash string) (bool, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "ComparePassword")
+	defer span.Finish()
 
 	parts := strings.Split(hash, "$")
 

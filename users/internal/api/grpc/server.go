@@ -13,6 +13,7 @@ import (
 type server struct {
 	users.UnimplementedUserServiceServer
 	userService api.UserService
+	logger      *zerolog.Logger
 }
 
 func NewGrpcApi(
@@ -30,6 +31,7 @@ func NewGrpcApi(
 
 	logger.Info().Msgf("running GRPC server at '%s'", appAddr)
 	users.RegisterUserServiceServer(s, &server{
+		logger:      logger,
 		userService: userService,
 	})
 	if err := s.Serve(lis); err != nil {

@@ -14,3 +14,7 @@ type UserRepository interface {
 	GetUserByUsernameOrEmail(ctx context.Context, username, email string) (*models.UserDAO, error)
 	GetUserByUsername(ctx context.Context, username string) (*models.UserDAO, error)
 }
+
+type RabbitProducer interface {
+	Publish(data []byte, reqesID string) (err error)
+}

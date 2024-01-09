@@ -4,6 +4,7 @@ import (
 	"context"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/opentracing/opentracing-go"
 	"users/internal/models"
 )
 
@@ -15,6 +16,9 @@ func NewUserRepository(conn *pgxpool.Pool) *UserRepository {
 	return &UserRepository{conn}
 }
 func (r *UserRepository) CreateUser(ctx context.Context, user *models.CreateUserDTO) (int, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.CreateUser")
+	defer span.Finish()
+
 	var userID int
 	sql := `
         INSERT INTO 
@@ -36,6 +40,9 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *models.CreateUser
 }
 
 func (r *UserRepository) UpdateUser(ctx context.Context, user *models.UserDAO) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.UpdateUser")
+	defer span.Finish()
+
 	sql := `
         UPDATE 
             users
@@ -50,6 +57,9 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user *models.UserDAO) e
 }
 
 func (r *UserRepository) UpdatePassword(ctx context.Context, userID int, newPassword string) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.UpdatePassword")
+	defer span.Finish()
+
 	sql := `
         UPDATE 
             users
@@ -63,6 +73,9 @@ func (r *UserRepository) UpdatePassword(ctx context.Context, userID int, newPass
 }
 
 func (r *UserRepository) DeleteUser(ctx context.Context, userID int) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.DeleteUser")
+	defer span.Finish()
+
 	sql := `
         DELETE FROM 
 		    users
@@ -74,6 +87,9 @@ func (r *UserRepository) DeleteUser(ctx context.Context, userID int) error {
 }
 
 func (r *UserRepository) GetUserByID(ctx context.Context, userID int) (*models.UserDAO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.GetUserByID")
+	defer span.Finish()
+
 	var user models.UserDAO
 	sql := `
         SELECT 
@@ -95,6 +111,9 @@ func (r *UserRepository) GetUserByID(ctx context.Context, userID int) (*models.U
 }
 
 func (r *UserRepository) GetUserByUsernameOrEmail(ctx context.Context, username, email string) (*models.UserDAO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.GetUserByUsernameOrEmail")
+	defer span.Finish()
+
 	var user models.UserDAO
 	// создадим конструктор квери. определим, что и откуда забрать
 	queryBuilder := sq.
@@ -130,6 +149,9 @@ func (r *UserRepository) GetUserByUsernameOrEmail(ctx context.Context, username,
 }
 
 func (r *UserRepository) GetUserByUsername(ctx context.Context, username string) (*models.UserDAO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.GetUserByUsername")
+	defer span.Finish()
+
 	var user models.UserDAO
 	sql := `
         SELECT 

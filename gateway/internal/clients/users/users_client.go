@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"gateway/config"
 	"gateway/internal/models"
+	"gateway/pkg/ctxutil"
 	"gateway/pkg/grpc_stubs/users"
+	"github.com/opentracing/opentracing-go"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
@@ -34,6 +36,10 @@ func NewUsersClient(cfg *config.Config, logger *zerolog.Logger) (*UsersClient, e
 }
 
 func (c *UsersClient) CreateUser(ctx context.Context, user *models.CreateUserDTO) (int, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "client.CreateUser")
+	defer span.Finish()
+
+	ctx = ctxutil.SetRequestIdFromContextToGrpc(ctx)
 	res, err := c.client.RegisterUser(ctx, user.ToGRPC())
 	if err != nil {
 		return 0, err
@@ -43,6 +49,10 @@ func (c *UsersClient) CreateUser(ctx context.Context, user *models.CreateUserDTO
 }
 
 func (c *UsersClient) UpdateUser(ctx context.Context, user *models.UserDTO) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "client.UpdateUser")
+	defer span.Finish()
+
+	ctx = ctxutil.SetRequestIdFromContextToGrpc(ctx)
 	_, err := c.client.UpdateUser(ctx, &users.UserDTO{
 		Id:       int32(user.ID),
 		Username: user.Username,
@@ -56,6 +66,10 @@ func (c *UsersClient) UpdateUser(ctx context.Context, user *models.UserDTO) erro
 }
 
 func (c *UsersClient) UpdatePassword(ctx context.Context, data *models.UpdateUserPasswordDTO) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "client.UpdatePassword")
+	defer span.Finish()
+
+	ctx = ctxutil.SetRequestIdFromContextToGrpc(ctx)
 	_, err := c.client.UpdatePassword(ctx, data.ToGRPC())
 	if err != nil {
 		return err
@@ -65,6 +79,10 @@ func (c *UsersClient) UpdatePassword(ctx context.Context, data *models.UpdateUse
 }
 
 func (c *UsersClient) DeleteUser(ctx context.Context, userID int) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "client.DeleteUser")
+	defer span.Finish()
+
+	ctx = ctxutil.SetRequestIdFromContextToGrpc(ctx)
 	_, err := c.client.DeleteUser(ctx, &users.UserID{
 		Id: int32(userID),
 	})
@@ -76,6 +94,10 @@ func (c *UsersClient) DeleteUser(ctx context.Context, userID int) error {
 }
 
 func (c *UsersClient) GetUserByID(ctx context.Context, userID int) (*models.UserDTO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "client.GetUserByID")
+	defer span.Finish()
+
+	ctx = ctxutil.SetRequestIdFromContextToGrpc(ctx)
 	user, err := c.client.GetUserByID(ctx, &users.UserID{
 		Id: int32(userID),
 	})
@@ -87,6 +109,10 @@ func (c *UsersClient) GetUserByID(ctx context.Context, userID int) (*models.User
 }
 
 func (c *UsersClient) GetUserByUsernameOrEmail(ctx context.Context, username, email string) (*models.UserDTO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "client.GetUserByUsernameOrEmail")
+	defer span.Finish()
+
+	ctx = ctxutil.SetRequestIdFromContextToGrpc(ctx)
 	user, err := c.client.GetUserByUsernameOrEmail(ctx, &users.UserDTO{
 		Username: username,
 		Email:    email,
@@ -99,6 +125,10 @@ func (c *UsersClient) GetUserByUsernameOrEmail(ctx context.Context, username, em
 }
 
 func (c *UsersClient) GetUserByUsername(ctx context.Context, username string) (*models.UserDTO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "client.GetUserByUsername")
+	defer span.Finish()
+
+	ctx = ctxutil.SetRequestIdFromContextToGrpc(ctx)
 	user, err := c.client.GetUserByUsernameOrEmail(ctx, &users.UserDTO{
 		Username: username,
 	})
@@ -110,6 +140,10 @@ func (c *UsersClient) GetUserByUsername(ctx context.Context, username string) (*
 }
 
 func (c *UsersClient) UserLogin(ctx context.Context, data *models.UserLoginDTO) (*models.UserDTO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "client.UserLogin")
+	defer span.Finish()
+
+	ctx = ctxutil.SetRequestIdFromContextToGrpc(ctx)
 	user, err := c.client.Login(ctx, data.ToGRPC())
 	if err != nil {
 		return nil, err

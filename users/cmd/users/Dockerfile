@@ -17,6 +17,13 @@ ENV POSTGRES_USER=postgres
 ENV POSTGRES_PASSWORD=postgres
 ENV POSTGRES_DBNAME=postgres
 
+ENV RABBITMQ_USER=notifications
+ENV RABBITMQ_PASSWORD=notifications
+ENV RABBITMQ_HOST=rabbitmq
+ENV RABBITMQ_PORT=5672
+
+ENV JAEGER_HOST=jaeger:6831
+ENV JAEGER_LOG_SPANS=true
 
 # копируем файлы приложения в рабочую папку образа
 COPY app /build/app

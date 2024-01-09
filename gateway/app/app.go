@@ -8,6 +8,8 @@ import (
 	"gateway/internal/clients/todos"
 	"gateway/internal/clients/users"
 	"gateway/internal/service"
+	"gateway/pkg/jaeger"
+	"github.com/opentracing/opentracing-go"
 	"golang.org/x/sync/errgroup"
 
 	"gateway/pkg/logging"
@@ -39,6 +41,16 @@ func NewApp(cfg *config.Config) (*App, error) {
 }
 
 func (a *App) RunAPI() error {
+	tracer, closer, err := jaeger.InitJaeger(&a.cfg.Jaeger, a.cfg.Logging.LogIndex)
+	if err != nil {
+		return fmt.Errorf("[NewApp] init jaeger %w", err)
+	}
+
+	a.logger.Info().Msgf("connected to jaeger at '%s'", a.cfg.Jaeger.Host)
+
+	opentracing.SetGlobalTracer(tracer)
+	defer closer.Close()
+
 	group := new(errgroup.Group)
 
 	group.Go(func() error {

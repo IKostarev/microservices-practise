@@ -3,15 +3,14 @@ package service
 import (
 	"context"
 	"gateway/internal/models"
-	"github.com/google/uuid"
 )
 
 type TodoServiceClient interface {
-	CreateToDo(ctx context.Context, newTodo *models.TodoDTO) (*models.TodoDTO, error)
-	UpdateToDo(ctx context.Context, newTodo *models.TodoDTO) (*models.TodoDTO, error)
-	GetToDos(ctx context.Context, todos *models.GetTodosDTO) ([]models.TodoDTO, error)
-	GetToDo(ctx context.Context, todoID uuid.UUID) (*models.TodoDTO, error)
-	DeleteToDo(ctx context.Context, todoID uuid.UUID) error
+	CreateToDo(ctx context.Context, newTodo *models.CreateTodoDTO) (int, error)
+	UpdateToDo(ctx context.Context, updateTodo *models.UpdateTodoDTO) (int, error)
+	GetToDos(ctx context.Context, todoID int) (*models.TodoDTO, error)
+	GetToDo(ctx context.Context, todoID int) (*models.TodoDTO, error)
+	DeleteToDo(ctx context.Context, todoID int) error
 }
 
 type UsersServiceClient interface {

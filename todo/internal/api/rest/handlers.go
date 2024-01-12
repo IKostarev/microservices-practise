@@ -1,111 +1,125 @@
-package handlers
+package rest
 
 import (
 	"encoding/json"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 	"net/http"
+	"strconv"
+	"todo/internal/api"
 	"todo/internal/models"
 )
 
 type TodoHandler struct {
-	todoService TodoService
 	logger      *zerolog.Logger
+	todoService api.TodoService
 }
 
-func NewTodoHandler(todoService TodoService, logger *zerolog.Logger) *TodoHandler {
+func NewTodoHandler(
+	logger *zerolog.Logger,
+	todoService api.TodoService,
+) *TodoHandler {
 	return &TodoHandler{
-		todoService: todoService,
 		logger:      logger,
+		todoService: todoService,
 	}
 }
 
 func (h *TodoHandler) CreateToDoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var newTodo = new(models.TodoDTO)
+	var newTodo = new(models.CreateTodoDTO)
 	if err := json.NewDecoder(r.Body).Decode(&newTodo); err != nil {
 		h.logger.Err(err).Msg("[CreateToDoHandler] error unmarshal")
-		h.JSONErrorRespond(w, BadRequest)
+		h.ErrorBadRequest(w)
 		return
 	}
 
 	todoID, err := h.todoService.CreateToDo(ctx, newTodo)
 	if err != nil {
 		h.logger.Err(err).Msg("[CreateToDoHandler] error create")
-		h.JSONErrorRespond(w, InternalServerError)
+		h.ErrorInternalApi(w)
 		return
 	}
 
-	h.JSONSuccessRespond(w, Created, todoID)
+	h.JSONSuccessRespond(w, todoID)
 }
 
 func (h *TodoHandler) GetToDoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	todoID, err := uuid.Parse(mux.Vars(r)["id"])
+	todoID, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		h.logger.Err(err).Msg("[GetToDoHandler] error parse uuid")
-		h.JSONErrorRespond(w, BadRequest)
+		h.ErrorBadRequest(w)
 		return
 	}
 
 	todo, err := h.todoService.GetToDo(ctx, todoID)
 	if err != nil {
 		h.logger.Err(err).Msg("[GetToDoHandler] error get todo")
-		h.JSONErrorRespond(w, InternalServerError)
+		h.ErrorInternalApi(w)
 		return
 	}
 
-	h.JSONSuccessRespond(w, OK, todo)
+	h.JSONSuccessRespond(w, todo)
 }
 
 func (h *TodoHandler) GetToDosHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	todoID := uuid.Must(uuid.FromBytes([]byte(mux.Vars(r)["id"])))
+	todoID, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		h.logger.Err(err).Msg("[GetToDosHandler] error parse uuid")
+		h.ErrorBadRequest(w)
+		return
+	}
 
 	todos, err := h.todoService.GetToDos(ctx, todoID)
 	if err != nil {
 		h.logger.Err(err).Msg("[GetToDosHandler] error get ToDos")
-		h.JSONErrorRespond(w, InternalServerError)
+		h.ErrorInternalApi(w)
 		return
 	}
 
-	h.JSONSuccessRespond(w, OK, todos)
+	h.JSONSuccessRespond(w, todos)
 }
 
 func (h *TodoHandler) UpdateToDoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var updTodo = new(models.TodoDTO)
+	var updTodo = new(models.UpdateTodoDTO)
 	if err := json.NewDecoder(r.Body).Decode(&updTodo); err != nil {
 		h.logger.Err(err).Msg("[UpdateToDoHandler] error unmarshal")
-		h.JSONErrorRespond(w, BadRequest)
+		h.ErrorBadRequest(w)
 		return
 	}
 
-	err := h.todoService.UpdateToDo(ctx, updTodo)
+	todoID, err := h.todoService.UpdateToDo(ctx, updTodo)
 	if err != nil {
 		h.logger.Err(err).Msg("[UpdateToDoHandler] error update todo")
-		h.JSONErrorRespond(w, InternalServerError)
+		h.ErrorInternalApi(w)
 		return
 	}
 
-	h.JSONSuccessRespond(w, OK, nil)
+	h.JSONSuccessRespond(w, todoID)
 }
 
 func (h *TodoHandler) DeleteToDoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	todoID := uuid.Must(uuid.FromBytes([]byte(mux.Vars(r)["id"])))
-
-	if err := h.todoService.DeleteToDo(ctx, todoID); err != nil {
-		h.logger.Err(err).Msg("[DeleteToDoHandler] error delete todo")
-		h.JSONErrorRespond(w, InternalServerError)
+	todoID, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		h.logger.Err(err).Msg("[GetToDosHandler] error parse uuid")
+		h.ErrorBadRequest(w)
 		return
 	}
 
-	h.JSONSuccessRespond(w, OK, nil)
+	if err := h.todoService.DeleteToDo(ctx, todoID); err != nil {
+		h.logger.Err(err).Msg("[DeleteToDoHandler] error delete todo")
+		h.ErrorInternalApi(w)
+		return
+	}
+
+	h.JSONSuccessRespond(w, todoID)
 }

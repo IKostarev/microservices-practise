@@ -1,56 +1,86 @@
 package app
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/opentracing/opentracing-go"
 	"github.com/rs/zerolog"
-	"net/http"
+	"golang.org/x/sync/errgroup"
 	"todo/config"
-	"todo/internal/handlers"
+	"todo/internal/api"
+	"todo/internal/api/grpc"
+	"todo/internal/api/rest"
 	"todo/internal/repository"
 	"todo/internal/service"
-	"todo/pkg/db/postgres"
-	"todo/pkg/logger"
+	"todo/pkg/jaeger"
+	"todo/pkg/logging"
+	"todo/pkg/postgresql"
+	"todo/pkg/rabbitmq/producer"
 )
 
 type App struct {
-	cfg    *config.Config
-	router *mux.Router
-	logger *zerolog.Logger
+	cfg              *config.Config
+	router           *mux.Router
+	logger           *zerolog.Logger
+	todoService      api.TodoService
+	rabbitmqProducer *producer.Producer
 }
 
-func NewApp(cfg *config.Config) *App {
-	return &App{
-		cfg:    cfg,
-		logger: logger.NewLogger(cfg.Logger),
-	}
-}
+func NewApp(
+	cfg *config.Config,
+) (*App, error) {
+	logger := logging.NewLogger(cfg.Logging)
 
-func (a *App) RunAPI() error {
-	conn, err := postgres.NewPostgres(&a.cfg.Database)
+	databaseConn, err := postgresql.NewPgxConn(&cfg.Postgres)
 	if err != nil {
-		a.logger.Err(err).Msgf("[RunAPI] db conn: %w\n", err)
-		return err
+		return nil, fmt.Errorf("connect to database: %w", err)
 	}
-	defer conn.Close()
 
-	repo := repository.NewTodoRepository(conn)
-	serv := service.NewTodoService(repo)
+	todoRepo := repository.NewTodoRepository(databaseConn)
 
-	todoHandler := handlers.NewTodoHandler(serv, a.logger)
+	todosProducer, err := producer.New(
+		&cfg.RabbitConfig,
+		cfg.TodoExchange,
+		cfg.TodoQueue,
+		logger,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("start rabbit producer: %w", err)
+	}
 
-	a.router = mux.NewRouter()
+	todoService := service.NewTodoService(todoRepo, todosProducer)
 
-	r := a.router.PathPrefix("/api/v1/todos").Subrouter()
+	return &App{
+		cfg:         cfg,
+		logger:      logger,
+		todoService: todoService,
+	}, nil
+}
 
-	r.HandleFunc("/", todoHandler.CreateToDoHandler).Methods(http.MethodPost)
-	r.HandleFunc("/batch", todoHandler.GetToDosHandler).Methods(http.MethodGet)
-	r.HandleFunc("/{id}", todoHandler.GetToDoHandler).Methods(http.MethodGet)
-	r.HandleFunc("/{id}", todoHandler.UpdateToDoHandler).Methods(http.MethodPut)
-	r.HandleFunc("/{id}", todoHandler.DeleteToDoHandler).Methods(http.MethodDelete)
+func (a *App) RunApp() error {
+	tracer, closer, err := jaeger.InitJaeger(&a.cfg.Jaeger, a.cfg.Logging.LogIndex)
+	if err != nil {
+		return fmt.Errorf("[RunApp] init jaeger %w", err)
+	}
 
-	if err = http.ListenAndServe(a.cfg.App.AppPort, a.router); err != nil {
-		a.logger.Err(err).Msgf("ListenAndServe error is - %s\n", err)
-		return err
+	a.logger.Info().Msgf("connect to jaeger at '%s'", a.cfg.Jaeger.Host)
+
+	opentracing.SetGlobalTracer(tracer)
+	defer closer.Close()
+
+	group := new(errgroup.Group)
+	group.Go(func() error {
+		err := rest.NewRestApi(a.cfg, a.logger, a.todoService)
+		return fmt.Errorf("[RunApp] run REST: %w", err)
+	})
+
+	group.Go(func() error {
+		err := grpc.NewGrpcApi(a.cfg, a.logger, a.todoService)
+		return fmt.Errorf("[RunApp] run GRPC: %w", err)
+	})
+
+	if err := group.Wait(); err != nil {
+		return fmt.Errorf("[RunApp] run: %w", err)
 	}
 
 	return nil

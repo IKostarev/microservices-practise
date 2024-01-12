@@ -4,108 +4,87 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/uuid"
-	"time"
+	"github.com/opentracing/opentracing-go"
 	"todo/internal/models"
 )
 
-type PasswordConfig struct {
-	time    uint32
-	memory  uint32
-	threads uint8
-	keyLen  uint32
-}
-
 type TodoService struct {
-	passConfig *PasswordConfig
-	userRepo   TodoRepository
+	todoRepo           TodoRepository
+	todoRabbitProducer RabbitProducer
 }
 
-func NewTodoService(userRepo TodoRepository) *TodoService {
+func NewTodoService(
+	todoRepo TodoRepository,
+	todoRabbitProducer RabbitProducer,
+) *TodoService {
 	return &TodoService{
-		userRepo: userRepo,
+		todoRepo:           todoRepo,
+		todoRabbitProducer: todoRabbitProducer,
 	}
 }
 
-func (s *TodoService) CreateToDo(ctx context.Context, newTodo *models.TodoDTO) (uuid.UUID, error) {
-	context, _ := context.WithTimeout(ctx, time.Second*3)
+func (t *TodoService) CreateToDo(ctx context.Context, newTodo *models.CreateTodoDTO) (int, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.CreateToDo")
+	defer span.Finish()
 
-	m := &models.TodoDAO{
-		ID:          uuid.New(),
-		CreatedBy:   newTodo.CreatedBy,
-		Assignee:    newTodo.Assignee,
-		Description: newTodo.Description,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}
-
-	createResult, err := s.userRepo.CreateToDo(context, m)
+	todoID, err := t.todoRepo.CreateToDo(ctx, newTodo)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("[CreateToDo] create - %w\n", err)
+		return 0, fmt.Errorf("[CreateToDo] store user:%w", err)
 	}
 
-	return createResult, nil
+	return int(todoID.ID()), nil
 }
 
-func (s *TodoService) UpdateToDo(ctx context.Context, newTodo *models.TodoDTO) error {
-	context, _ := context.WithTimeout(ctx, time.Second*3)
+func (t *TodoService) UpdateToDo(ctx context.Context, updateTodo *models.UpdateTodoDTO) (int, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.UpdateTodo")
+	defer span.Finish()
 
-	m := &models.TodoDAO{
-		ID:          newTodo.ID,
-		CreatedBy:   newTodo.CreatedBy,
-		Assignee:    newTodo.Assignee,
-		Description: newTodo.Description,
-		CreatedAt:   newTodo.CreatedAt,
-		UpdatedAt:   time.Now(),
+	upd := &models.TodoDAO{
+		ID:          updateTodo.ID,
+		Assignee:    updateTodo.Assignee,
+		Description: updateTodo.Description,
+		UpdatedAt:   updateTodo.UpdatedAt,
 	}
 
-	err := s.userRepo.UpdateToDo(context, m)
+	todoID, err := t.todoRepo.UpdateToDo(ctx, upd)
 	if err != nil {
-		return fmt.Errorf("[UpdateToDo] update - %w\n", err)
+		return 0, fmt.Errorf("[UpdateToDo] update todo:%w", err)
 	}
 
-	return nil
+	return int(todoID.ID()), nil
 }
 
-func (s *TodoService) GetToDos(ctx context.Context, todoID uuid.UUID) ([]models.TodoDTO, error) {
-	context, _ := context.WithTimeout(ctx, time.Second*3)
+func (t *TodoService) GetToDos(ctx context.Context, todoID int) (*models.TodoDTO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetToDos")
+	defer span.Finish()
 
-	list, err := s.userRepo.GetToDos(context, todoID)
+	_, err := t.todoRepo.GetToDos(ctx, uuid.New())
 	if err != nil {
-		return nil, fmt.Errorf("[GetToDos] get todos - %w\n", err)
+		return nil, fmt.Errorf("[GetToDo] get todo:%w", err)
 	}
 
-	result := make([]models.TodoDTO, 0, len(list))
-
-	for _, item := range list {
-		result = append(result, models.TodoDTO{
-			ID:          item.ID,
-			CreatedBy:   item.CreatedBy,
-			Assignee:    item.Assignee,
-			Description: item.Description,
-			CreatedAt:   item.CreatedAt,
-			UpdatedAt:   item.UpdatedAt,
-		})
-	}
-
-	return result, nil
+	return nil, nil //TODO fix
 }
 
-func (s *TodoService) GetToDo(ctx context.Context, todoID uuid.UUID) (*models.TodoDTO, error) {
-	context, _ := context.WithTimeout(ctx, time.Second*3)
+func (t *TodoService) GetToDo(ctx context.Context, todoID int) (*models.TodoDTO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetTodo")
+	defer span.Finish()
 
-	todo, err := s.userRepo.GetToDo(context, todoID)
+	todo, err := t.todoRepo.GetToDo(ctx, uuid.New())
 	if err != nil {
-		return nil, fmt.Errorf("[GetToDo] get todo - %w", err)
+		return nil, fmt.Errorf("[GetToDo] get todo:%w", err)
 	}
 
 	return (*models.TodoDTO)(todo), nil
 }
 
-func (s *TodoService) DeleteToDo(ctx context.Context, todoID uuid.UUID) error {
-	context, _ := context.WithTimeout(ctx, time.Second*3)
+func (t *TodoService) DeleteToDo(ctx context.Context, todoID int) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.DeleteToDo")
+	defer span.Finish()
 
-	if err := s.userRepo.DeleteToDo(context, todoID); err != nil {
-		return fmt.Errorf("[DeleteToDo] delete - %w\n", err)
+	err := t.todoRepo.DeleteToDo(ctx, uuid.New()) // TODO fix
+	if err != nil {
+		return fmt.Errorf("[DeleteToDo] delete todo:%w", err)
 	}
 
 	return nil

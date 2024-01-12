@@ -7,3 +7,7 @@ import (
 type UserService interface {
 	SendUserMessage(item *models.UserMailItem) error
 }
+
+type TodoService interface {
+	GetUserMessage(item *models.TodoMailItem) error
+}

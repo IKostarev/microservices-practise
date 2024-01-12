@@ -25,6 +25,9 @@ func ConsumeRabbitMessages(
 	usersService := service.NewUsersService(logger, smtpClient)
 	usersMessagesHandler := NewUsersMessagesHandler(logger, usersService)
 
+	todoService := service.NewTodoService(logger, smtpClient)
+	todoMessagesHandler := NewTodoMessagesHandler(logger, todoService)
+
 	rabbitMQ.SetHandler(
 		cfg.UsersQueue,
 		cfg.UsersExchange,
@@ -32,6 +35,15 @@ func ConsumeRabbitMessages(
 	)
 	if err != nil {
 		return fmt.Errorf("[ConsumeRabbitMessages] create users rabbitmq consumer: %w", err)
+	}
+
+	rabbitMQ.SetHandler(
+		cfg.TodoQueue,
+		cfg.TodoExchange,
+		todoMessagesHandler,
+	)
+	if err != nil {
+		return fmt.Errorf("[ConsumeRabbitMessages] create todo rabbitmq consumer: %w", err)
 	}
 
 	rabbitMQ.Run()

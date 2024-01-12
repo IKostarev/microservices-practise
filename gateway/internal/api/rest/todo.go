@@ -9,13 +9,12 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 func (h *GatewayHandler) CreateToDoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var newTodo = new(models.TodoDTO)
+	var newTodo = new(models.CreateTodoDTO)
 	if err := json.NewDecoder(r.Body).Decode(&newTodo); err != nil {
 		h.logger.Error().Msgf("[CreateToDoHandler] unmarshal: %s", err)
 		h.ErrorBadRequest(w)
@@ -35,7 +34,7 @@ func (h *GatewayHandler) CreateToDoHandler(w http.ResponseWriter, r *http.Reques
 func (h *GatewayHandler) GetToDoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	id, err := uuid.Parse(mux.Vars(r)["id"])
+	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		h.logger.Error().Msgf("[GetToDoHandler] parse id from url: %s", err)
 		h.ErrorBadRequest(w)
@@ -60,11 +59,12 @@ func (h *GatewayHandler) GetToDoHandler(w http.ResponseWriter, r *http.Request) 
 func (h *GatewayHandler) GetToDosHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	getTodos := new(models.GetTodosDTO)
-	getTodos.CreatedBy, _ = strconv.Atoi(r.URL.Query().Get("created_by"))
-	getTodos.Assignee, _ = strconv.Atoi(r.URL.Query().Get("assignee"))
-	getTodos.DateFrom, _ = time.Parse(time.RFC3339, r.URL.Query().Get("date_from"))
-	getTodos.DateTo, _ = time.Parse(time.RFC3339, r.URL.Query().Get("date_to"))
+	getTodos, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		h.logger.Error().Msgf("[GetToDosHandler] parse id from url: %s", err)
+		h.ErrorBadRequest(w)
+		return
+	}
 
 	todos, err := h.gatewayService.GetToDos(ctx, getTodos)
 	if err != nil {
@@ -86,7 +86,7 @@ func (h *GatewayHandler) UpdateToDoHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	todo := new(models.TodoDTO)
+	todo := new(models.UpdateTodoDTO)
 	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
 		h.ErrorBadRequest(w)
 		return
@@ -111,7 +111,7 @@ func (h *GatewayHandler) UpdateToDoHandler(w http.ResponseWriter, r *http.Reques
 func (h *GatewayHandler) DeleteToDoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	id, err := uuid.Parse(mux.Vars(r)["id"])
+	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		h.logger.Error().Msgf("[DeleteToDoHandler] parse id from url: %s", err)
 		h.ErrorBadRequest(w)

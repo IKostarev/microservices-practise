@@ -1,0 +1,238 @@
+basePath: /api
+definitions:
+  models.CreateUserDTO:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      id:
+        example: 1
+        type: integer
+      password:
+        example: password
+        type: string
+      password_confirmation:
+        example: password
+        type: string
+      username:
+        example: username
+        type: string
+    type: object
+  models.UpdateUserPasswordDTO:
+    properties:
+      id:
+        example: 1
+        type: integer
+      old_password:
+        example: password
+        type: string
+      password:
+        example: password
+        type: string
+      password_confirmation:
+        example: password
+        type: string
+    type: object
+  models.UserDTO:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      id:
+        example: 1
+        type: integer
+      password:
+        example: password
+        type: string
+      username:
+        example: username
+        type: string
+    type: object
+  models.UserLoginDTO:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  models.UserTokens:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact: {}
+  description: This service is Gateway API for all microservices of ToDo service
+  title: ToDo Gateway API
+  version: "1.0"
+paths:
+  /v1/users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves user details by their unique ID.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserDTO'
+      summary: Get user by ID
+      tags:
+      - users
+      - v1
+  /v1/users/delete/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a user from the system based on their ID.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Delete a user
+      tags:
+      - users
+      - v1
+  /v1/users/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns access and refresh tokens.
+      parameters:
+      - description: Login Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserLoginDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token Info
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User login
+      tags:
+      - users
+      - v1
+  /v1/users/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refreshes the user's access token.
+      parameters:
+      - description: Token Refresh Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserTokens'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New Token Info
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh access token
+      tags:
+      - users
+      - v1
+  /v1/users/register:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint registers a new user in the system.
+      parameters:
+      - description: New User
+        in: body
+        name: newUser
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: user_id
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+      summary: Register a new user
+      tags:
+      - users
+      - v1
+  /v1/users/update:
+    put:
+      consumes:
+      - application/json
+      description: Updates the information of an existing user.
+      parameters:
+      - description: Updated User
+        in: body
+        name: updatedUser
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Update user information
+      tags:
+      - users
+      - v1
+  /v1/users/update-password:
+    put:
+      consumes:
+      - application/json
+      description: Allows a user to update their password.
+      parameters:
+      - description: Password Update Request
+        in: body
+        name: passwordRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateUserPasswordDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Update user's password
+      tags:
+      - users
+      - v1
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

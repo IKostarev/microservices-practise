@@ -1,0 +1,8 @@
+### Send POST request with json body - create todo
+POST http://localhost:3000/api/v1/todos
+Content-Type: application/json
+{
+  "created_by": 1,
+  "assignee": 1,
+  "description": "desc"
+}

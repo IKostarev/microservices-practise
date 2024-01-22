@@ -1,0 +1,8 @@
+### Send PATCH request with json body - update todo
+PATCH http://localhost:3000/api/v1/todos/{id}
+Content-Type: application/json
+{
+  "created_by": 1,
+  "assignee": 1,
+  "description": "upd"
+}

@@ -12,6 +12,15 @@ import (
 	"strconv"
 )
 
+// RegisterUser godoc
+// @Summary Register a new user
+// @Description This endpoint registers a new user in the system.
+// @Tags users, v1
+// @Accept json
+// @Produce json
+// @Param newUser body models.CreateUserDTO true "New User"
+// @Success 200 {object} map[string]int "user_id"
+// @Router /v1/users/register [post]
 func (h *GatewayHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestId, _ := ctxutil.GetRequestIDFromContext(ctx)
@@ -51,10 +60,19 @@ func (h *GatewayHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	h.JSONSuccessRespond(w, response)
 }
 
-func (h *GatewayHandler) GetGetUserById(w http.ResponseWriter, r *http.Request) {
+// GetUserById godoc
+// @Summary Get user by ID
+// @Description Retrieves user details by their unique ID.
+// @Tags users, v1
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} models.UserDTO
+// @Router /v1/users/{id} [get]
+func (h *GatewayHandler) GetUserById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestId, _ := ctxutil.GetRequestIDFromContext(ctx)
-	span, ctx := opentracing.StartSpanFromContext(ctx, "gateway.GetGetUserById")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "gateway.GetUserById")
 	defer span.Finish()
 
 	// Обработка запроса на получение информации о пользователе.
@@ -62,7 +80,7 @@ func (h *GatewayHandler) GetGetUserById(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		h.logger.Error().
 			Str("requestId", requestId).
-			Msgf("[GetGetUserById] get id from query:%s", err)
+			Msgf("[GetUserById] get id from query:%s", err)
 		h.ErrorBadRequest(w)
 		return
 	}
@@ -77,7 +95,7 @@ func (h *GatewayHandler) GetGetUserById(w http.ResponseWriter, r *http.Request) 
 
 		h.logger.Error().
 			Str("requestId", requestId).
-			Msgf("[GetGetUserById] get user:%s", err)
+			Msgf("[GetUserById] get user:%s", err)
 		h.ErrorInternalApi(w)
 		return
 	}
@@ -86,6 +104,15 @@ func (h *GatewayHandler) GetGetUserById(w http.ResponseWriter, r *http.Request) 
 	h.JSONSuccessRespond(w, user)
 }
 
+// UpdateUser godoc
+// @Summary Update user information
+// @Description Updates the information of an existing user.
+// @Tags users, v1
+// @Accept json
+// @Produce json
+// @Param updatedUser body models.UserDTO true "Updated User"
+// @Success 200
+// @Router /v1/users/update [put]
 func (h *GatewayHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestId, _ := ctxutil.GetRequestIDFromContext(ctx)
@@ -116,6 +143,15 @@ func (h *GatewayHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	h.JSONSuccessRespond(w, response)
 }
 
+// UpdatePassword godoc
+// @Summary Update user's password
+// @Description Allows a user to update their password.
+// @Tags users, v1
+// @Accept json
+// @Produce json
+// @Param passwordRequest body models.UpdateUserPasswordDTO true "Password Update Request"
+// @Success 200
+// @Router /v1/users/update-password [put]
 func (h *GatewayHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestId, _ := ctxutil.GetRequestIDFromContext(ctx)
@@ -145,6 +181,15 @@ func (h *GatewayHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) 
 	h.JSONSuccessRespond(w, nil)
 }
 
+// DeleteUser godoc
+// @Summary Delete a user
+// @Description Deletes a user from the system based on their ID.
+// @Tags users, v1
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200
+// @Router /v1/users/delete/{id} [delete]
 func (h *GatewayHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestId, _ := ctxutil.GetRequestIDFromContext(ctx)
@@ -174,6 +219,15 @@ func (h *GatewayHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	h.JSONSuccessRespond(w, nil)
 }
 
+// UserLogin godoc
+// @Summary User login
+// @Description Authenticates a user and returns access and refresh tokens.
+// @Tags users, v1
+// @Accept json
+// @Produce json
+// @Param request body models.UserLoginDTO true "Login Credentials"
+// @Success 200 {object} map[string]string "Token Info"
+// @Router /v1/users/login [post]
 func (h *GatewayHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestId, _ := ctxutil.GetRequestIDFromContext(ctx)
@@ -209,6 +263,15 @@ func (h *GatewayHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	h.JSONSuccessRespond(w, response)
 }
 
+// Refresh godoc
+// @Summary Refresh access token
+// @Description Refreshes the user's access token.
+// @Tags users, v1
+// @Accept json
+// @Produce json
+// @Param request body models.UserTokens true "Token Refresh Request"
+// @Success 200 {object} map[string]string "New Token Info"
+// @Router /v1/users/refresh [post]
 func (h *GatewayHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestId, _ := ctxutil.GetRequestIDFromContext(ctx)

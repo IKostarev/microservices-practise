@@ -40,7 +40,7 @@ func (h *GatewayHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	// передаем данные в слой сервиса
 	userID, err := h.gatewayService.RegisterUser(ctx, newUser)
 	if err != nil {
-		if errors.As(err, &appErrors.ErrUsernameOrEmailIsUsed) {
+		if errors.Is(err, appErrors.ErrUsernameOrEmailIsUsed) {
 			h.ErrorUsernameOrEmailAlreadyUsed(w)
 			return
 		}
@@ -88,7 +88,7 @@ func (h *GatewayHandler) GetUserById(w http.ResponseWriter, r *http.Request) {
 	// передаем данные в слой сервиса
 	user, err := h.gatewayService.GetUserByID(ctx, userID)
 	if err != nil {
-		if errors.As(err, &appErrors.ErrNotFound) {
+		if errors.Is(err, appErrors.ErrNotFound) {
 			h.ErrorNotFound(w)
 			return
 		}
@@ -247,7 +247,7 @@ func (h *GatewayHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 
 	response, err := h.gatewayService.Login(ctx, request)
 	if err != nil {
-		if errors.As(err, &appErrors.ErrWrongCredentials) {
+		if errors.Is(err, appErrors.ErrWrongCredentials) {
 			h.ErrorWrongCredentials(w)
 			return
 		}

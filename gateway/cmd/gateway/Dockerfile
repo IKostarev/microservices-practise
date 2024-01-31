@@ -28,12 +28,18 @@ COPY pkg /build/pkg
 COPY go.mod /build/
 COPY go.sum /build/
 
+
+# скачиваем зависимости приложения
+RUN go mod download
+
+# запускаем тесты
+RUN go test ./...
+
 # запускаем в образе команды
 # скачиваем зависимости приложения
 # собирвем приложение
 # делаем бинарный файл исполняемым
-RUN go mod download && \
-    go build -o cmd/gateway/gateway ./cmd/gateway/main.go && \
+RUN go build -o cmd/gateway/gateway ./cmd/gateway/main.go && \
     chmod +x cmd/gateway/gateway
 
 # указываем бинарный файл

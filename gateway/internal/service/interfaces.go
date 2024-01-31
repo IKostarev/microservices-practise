@@ -14,6 +14,7 @@ type TodoServiceClient interface {
 	DeleteToDo(ctx context.Context, todoID uuid.UUID) error
 }
 
+//go:generate mockgen --build_flags=-mod=mod -destination=./mocks/users_client.go -package=mocks gateway/internal/service UsersServiceClient
 type UsersServiceClient interface {
 	CreateUser(ctx context.Context, user *models.CreateUserDTO) (int, error)
 	UpdateUser(ctx context.Context, user *models.UserDTO) error

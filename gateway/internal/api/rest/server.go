@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
+	"net/http/pprof"
 )
 
 // @title           ToDo Gateway API
@@ -32,6 +33,7 @@ func RunREST(
 		ValidateTokenMiddleware(
 			&cfg.JWT,
 			[]string{
+				"/debug/pprof",
 				"/docs/swagger",
 				"/api/v1/users/login",
 				"/api/v1/users/register",
@@ -40,6 +42,18 @@ func RunREST(
 	)
 
 	router.PathPrefix("/docs/swagger").Handler(httpSwagger.WrapHandler)
+
+	debugRouter := router.PathPrefix("/debug/pprof").Subrouter()
+
+	debugRouter.HandleFunc("/", pprof.Index).Methods(http.MethodGet)
+	debugRouter.HandleFunc("/cmdline", pprof.Cmdline).Methods(http.MethodGet)
+	debugRouter.HandleFunc("/profile", pprof.Profile).Methods(http.MethodGet)
+	debugRouter.HandleFunc("/symbol", pprof.Symbol).Methods(http.MethodGet)
+	debugRouter.HandleFunc("/trace", pprof.Trace).Methods(http.MethodGet)
+	debugRouter.Handle("/goroutine", pprof.Handler("goroutine")).Methods(http.MethodGet)
+	debugRouter.Handle("/heap", pprof.Handler("heap")).Methods(http.MethodGet)
+	debugRouter.Handle("/threadcreate", pprof.Handler("threadcreate")).Methods(http.MethodGet)
+	debugRouter.Handle("/block", pprof.Handler("block")).Methods(http.MethodGet)
 
 	usersV1Router := router.PathPrefix("/api/v1/users").Subrouter()
 	usersV1Router.HandleFunc("/register", gatewayHandler.RegisterUser).Methods(http.MethodPost)

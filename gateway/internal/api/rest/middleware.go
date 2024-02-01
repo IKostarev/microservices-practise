@@ -3,12 +3,17 @@ package rest
 import (
 	"gateway/pkg/ctxutil"
 	"gateway/pkg/jwtutil"
+	"gateway/pkg/redis"
 	"github.com/google/uuid"
 	"net/http"
 	"strings"
 )
 
-func ValidateTokenMiddleware(jwtUtil *jwtutil.JWTUtil, excludedPaths []string) func(http.Handler) http.Handler {
+func ValidateTokenMiddleware(
+	jwtUtil *jwtutil.JWTUtil,
+	excludedPaths []string,
+	manager *redis.RedisManager,
+) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Generate a UUID for each request
@@ -31,8 +36,12 @@ func ValidateTokenMiddleware(jwtUtil *jwtutil.JWTUtil, excludedPaths []string) f
 
 			// Validate the token
 			token := strings.TrimPrefix(authHeader, "Bearer ")
-			userID, err := jwtUtil.VerifyToken(token)
+			userID, exp, err := jwtUtil.VerifyToken(token)
 			if err != nil {
+				http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
+				return
+			}
+			if !manager.IsTokenValid(ctx, userID, exp) {
 				http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
 				return
 			}

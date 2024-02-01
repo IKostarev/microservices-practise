@@ -149,9 +149,10 @@ func BenchmarkRefresh(b *testing.B) {
 
 	// Тестовый refresh token.
 	refreshToken := "example_refresh_token"
+	accessToken := "example_refresh_token"
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, _ = service.Refresh(context.Background(), refreshToken)
+		_, _ = service.Refresh(context.Background(), refreshToken, accessToken)
 	}
 }

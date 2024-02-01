@@ -290,7 +290,7 @@ func (h *GatewayHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// передаем данные слою бизнес-логики
-	response, err := h.gatewayService.Refresh(ctx, request.RefreshToken)
+	response, err := h.gatewayService.Refresh(ctx, request.RefreshToken, request.AccessToken)
 	if err != nil {
 		h.logger.Error().
 			Str("requestId", requestId).
@@ -301,4 +301,78 @@ func (h *GatewayHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	// возвращаем пользователю ответ
 	h.JSONSuccessRespond(w, response)
+}
+
+// InvalidateTokensForUser godoc
+// @Summary Invalidate all tokens for a user
+// @Description Invalidates all tokens for a user.
+// @Tags users, v1
+// @Accept json
+// @Produce json
+// @Param user_id path string true "User ID"
+// @Success 200 {string} string "Tokens invalidated successfully"
+// @Router /v1/users/invalidate-tokens/{id} [post]
+func (h *GatewayHandler) InvalidateTokensForUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	requestId, _ := ctxutil.GetRequestIDFromContext(ctx)
+	span, ctx := opentracing.StartSpanFromContext(ctx, "gateway.InvalidateTokensForUser")
+	defer span.Finish()
+
+	userID, err := strconv.Atoi(mux.Vars(r)["user_id"])
+
+	err = h.gatewayService.InvalidateTokensForUser(ctx, userID)
+	if err != nil {
+		h.logger.Error().
+			Str("requestId", requestId).
+			Int("user_id", userID).
+			Msgf("[InvalidateTokensForUser] %s", err)
+		h.ErrorInternalApi(w)
+		return
+	}
+
+	h.JSONSuccessRespond(w, "Tokens invalidated successfully")
+}
+
+// InvalidateToken godoc
+// @Summary Invalidate a specific token for a user
+// @Description Invalidates a specific token for a user.
+// @Tags users, v1
+// @Accept json
+// @Produce json
+// @Param user_id path string true "User ID"
+// @Param token_id path string true "Token ID"
+// @Success 200 {string} string "Token invalidated successfully"
+// @Router /v1/users/invalidate-token/{id} [post]
+func (h *GatewayHandler) InvalidateToken(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	userID, err := strconv.Atoi(mux.Vars(r)["user_id"])
+
+	requestId, _ := ctxutil.GetRequestIDFromContext(ctx)
+	span, ctx := opentracing.StartSpanFromContext(ctx, "gateway.InvalidateTokensForUser")
+	defer span.Finish()
+
+	// Обработка запроса на удаление пользователя.
+	var request = new(models.UserTokens)
+	err = json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		h.logger.Error().
+			Str("requestId", requestId).
+			Msgf("[Refresh] unmarshall: %s", err)
+		h.ErrorBadRequest(w)
+		return
+	}
+
+	err = h.gatewayService.InvalidateToken(ctx, userID, request.AccessToken, request.RefreshToken)
+	if err != nil {
+		h.logger.Error().
+			Str("requestId", requestId).
+			Int("user_id", userID).
+			Msgf("[InvalidateToken] %s", err)
+		h.ErrorInternalApi(w)
+		return
+	}
+
+	h.JSONSuccessRespond(w, "Token invalidated successfully")
 }

@@ -5,6 +5,7 @@ import (
 	"gateway/config"
 	rest "gateway/internal/api"
 	_ "gateway/internal/api/docs"
+	"gateway/pkg/redis"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -25,6 +26,7 @@ func RunREST(
 	cfg *config.Config,
 	logger *zerolog.Logger,
 	gatewayService rest.GatewayService,
+	redisManager *redis.RedisManager,
 ) error {
 	gatewayHandler := NewGatewayHandler(logger, gatewayService)
 
@@ -36,8 +38,10 @@ func RunREST(
 				"/debug/pprof",
 				"/docs/swagger",
 				"/api/v1/users/login",
+				"/api/v1/users/refresh",
 				"/api/v1/users/register",
 			},
+			redisManager,
 		),
 	)
 
@@ -63,6 +67,8 @@ func RunREST(
 	usersV1Router.HandleFunc("/delete/{id:[0-9]+}", gatewayHandler.DeleteUser).Methods(http.MethodDelete)
 	usersV1Router.HandleFunc("/login", gatewayHandler.UserLogin).Methods(http.MethodPost)
 	usersV1Router.HandleFunc("/refresh", gatewayHandler.Refresh).Methods(http.MethodPost)
+	usersV1Router.HandleFunc("/invalidate-tokens/{user_id}", gatewayHandler.InvalidateTokensForUser).Methods(http.MethodPost)
+	usersV1Router.HandleFunc("/invalidate-token/{user_id}", gatewayHandler.InvalidateToken).Methods(http.MethodPost)
 
 	todosV1Router := router.PathPrefix("/api/v1/todos").Subrouter()
 	todosV1Router.HandleFunc("/", gatewayHandler.CreateToDoHandler).Methods(http.MethodPost)

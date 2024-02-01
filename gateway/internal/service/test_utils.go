@@ -28,6 +28,7 @@ func buildTestService(m *Mocks) *GatewayService {
 		},
 		nil,
 		m.UsersServiceClient,
+		nil,
 	)
 }
 

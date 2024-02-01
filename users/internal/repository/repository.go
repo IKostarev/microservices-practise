@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/opentracing/opentracing-go"
@@ -133,15 +135,19 @@ func (r *UserRepository) GetUserByUsernameOrEmail(ctx context.Context, username,
 	}
 
 	// создадим квери и аргументы для нее, зададим формат плэйсхолдеров в виде доллара
-	sql, args, err := queryBuilder.PlaceholderFormat(sq.Dollar).ToSql()
+	query, args, err := queryBuilder.PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return nil, err
 	}
 
 	// выполним запрос с созданной квери и подготовленными аргументами
-	err = r.conn.QueryRow(ctx, sql, args...).
+	err = r.conn.QueryRow(ctx, query, args...).
 		Scan(&user.ID, &user.Username, &user.Password, &user.Email)
 	if err != nil {
+		if errors.As(err, &sql.ErrNoRows) {
+			return nil, sql.ErrNoRows
+		}
+
 		return nil, err
 	}
 

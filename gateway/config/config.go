@@ -4,6 +4,7 @@ import (
 	"gateway/pkg/jaeger"
 	"gateway/pkg/jwtutil"
 	"gateway/pkg/logging"
+	"gateway/pkg/redis"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -14,6 +15,7 @@ type Config struct {
 	Jaeger      jaeger.JaegerConfig  `envconfig:"JAEGER"`
 	UsersClient UsersClient          `envconfig:"USERS"`
 	TodosClient TodosClient          `envconfig:"TODOS"`
+	RedisConfig redis.Config         `envconfig:"REDIS"`
 }
 
 type App struct {

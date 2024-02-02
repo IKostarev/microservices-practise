@@ -9,6 +9,7 @@ import (
 	"gateway/internal/clients/users"
 	"gateway/internal/service"
 	"gateway/pkg/jaeger"
+	"gateway/pkg/redis"
 	"github.com/opentracing/opentracing-go"
 	"golang.org/x/sync/errgroup"
 
@@ -20,6 +21,7 @@ type App struct {
 	cfg            *config.Config
 	logger         *zerolog.Logger
 	gatewayService api.GatewayService
+	redisManager   *redis.RedisManager
 }
 
 func NewApp(cfg *config.Config) (*App, error) {
@@ -35,12 +37,18 @@ func NewApp(cfg *config.Config) (*App, error) {
 		return nil, fmt.Errorf("[NewApp] grpc users: %w", err)
 	}
 
-	gatewayService := service.NewGatewayService(&cfg.JWT, todosClient, usersClient)
+	redisManager, err := redis.NewRedisManager(cfg.RedisConfig)
+	if err != nil {
+		return nil, fmt.Errorf("[NewApp] redis manager: %w", err)
+	}
+
+	gatewayService := service.NewGatewayService(&cfg.JWT, todosClient, usersClient, redisManager)
 
 	return &App{
 		cfg:            cfg,
 		logger:         logger,
 		gatewayService: gatewayService,
+		redisManager:   redisManager,
 	}, nil
 }
 
@@ -58,7 +66,7 @@ func (a *App) RunAPI() error {
 	group := new(errgroup.Group)
 
 	group.Go(func() error {
-		return rest.RunREST(a.cfg, a.logger, a.gatewayService)
+		return rest.RunREST(a.cfg, a.logger, a.gatewayService, a.redisManager)
 	})
 
 	if err := group.Wait(); err != nil {

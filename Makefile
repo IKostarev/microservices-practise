@@ -1,6 +1,6 @@
 up:
 	docker-compose -f docker-compose.yaml down -v
-	docker-compose -f docker-compose.yaml up -d postgres rabbitmq jaeger
+	docker-compose -f docker-compose.yaml up -d postgres rabbitmq jaeger redis redis-insight
 	docker-compose -f docker-compose.yaml up --build migrate-users
 	docker-compose -f docker-compose.yaml up --build migrate-todo
 	docker-compose -f docker-compose.yaml up -d --build --force-recreate users-service

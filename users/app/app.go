@@ -14,6 +14,7 @@ import (
 	"users/internal/service"
 	"users/pkg/jaeger"
 	"users/pkg/logging"
+	"users/pkg/pass_utils"
 	"users/pkg/postgresql"
 	"users/pkg/rabbitmq/producer"
 )
@@ -51,8 +52,10 @@ func NewApp(
 		return nil, fmt.Errorf("start rabbit producer: %w", err)
 	}
 
+	passUtils := pass_utils.NewPasswordUtils(&cfg.Password)
+
 	// передадим реализацию репозитория и продьюсера rabbit mq конструктору сервиса
-	userService := service.NewUserService(&cfg.Password, userRepo, usersProducer)
+	userService := service.NewUserService(userRepo, usersProducer, passUtils)
 
 	return &App{
 		cfg:         cfg,

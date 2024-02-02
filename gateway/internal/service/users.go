@@ -116,14 +116,24 @@ func (s *GatewayService) Login(ctx context.Context, login *models.UserLoginDTO) 
 	}
 
 	// Генерируем токены и возвращаем
-	accessToken, err := s.jwtUtil.GenerateAccessToken(existingUser.ID)
+	accessToken, accessExp, err := s.jwtUtil.GenerateAccessToken(existingUser.ID)
 	if err != nil {
 		return nil, fmt.Errorf("[Login] generate access token:%w", err)
 	}
 
-	refreshToken, err := s.jwtUtil.GenerateRefreshToken(existingUser.ID)
+	refreshToken, refreshExp, err := s.jwtUtil.GenerateRefreshToken(existingUser.ID)
 	if err != nil {
 		return nil, fmt.Errorf("[Login] generate refresh token:%w", err)
+	}
+
+	err = s.redisManager.StoreToken(ctx, existingUser.ID, accessToken, accessExp, s.jwtUtil.AccessTokenExp)
+	if err != nil {
+		return nil, fmt.Errorf("[Login] cache access token:%w", err)
+	}
+
+	err = s.redisManager.StoreToken(ctx, existingUser.ID, refreshToken, refreshExp, s.jwtUtil.RefreshTokenExp)
+	if err != nil {
+		return nil, fmt.Errorf("[Login] cache refresh token:%w", err)
 	}
 
 	return &models.UserTokens{
@@ -132,28 +142,81 @@ func (s *GatewayService) Login(ctx context.Context, login *models.UserLoginDTO) 
 	}, nil
 }
 
-func (s *GatewayService) Refresh(ctx context.Context, refresh string) (*models.UserTokens, error) {
+func (s *GatewayService) Refresh(ctx context.Context, refresh, access string) (*models.UserTokens, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.Refresh")
 	defer span.Finish()
 
-	userID, err := s.jwtUtil.VerifyToken(refresh)
+	userID, oldRefreshExp, err := s.jwtUtil.VerifyToken(refresh)
 	if err != nil {
 		return nil, fmt.Errorf("[Refresh] verify token:%w", err)
 	}
 
 	// Генерируем токены и возвращаем
-	accessToken, err := s.jwtUtil.GenerateAccessToken(userID)
+	accessToken, accessExp, err := s.jwtUtil.GenerateAccessToken(userID)
 	if err != nil {
 		return nil, fmt.Errorf("[Refresh] generate access token:%w", err)
 	}
 
-	refreshToken, err := s.jwtUtil.GenerateRefreshToken(userID)
+	refreshToken, refreshExp, err := s.jwtUtil.GenerateRefreshToken(userID)
 	if err != nil {
 		return nil, fmt.Errorf("[Refresh] generate refresh token:%w", err)
+	}
+
+	err = s.redisManager.StoreToken(ctx, userID, accessToken, accessExp, s.jwtUtil.AccessTokenExp)
+	if err != nil {
+		return nil, fmt.Errorf("[Refresh] cache access token:%w", err)
+	}
+
+	err = s.redisManager.StoreToken(ctx, userID, refreshToken, refreshExp, s.jwtUtil.RefreshTokenExp)
+	if err != nil {
+		return nil, fmt.Errorf("[Refresh] cache refresh token:%w", err)
+	}
+
+	userID, oldAccessExp, err := s.jwtUtil.VerifyToken(access)
+	if err != nil {
+		return nil, fmt.Errorf("[Refresh] verify access token:%w", err)
+	}
+
+	err = s.redisManager.InvalidateToken(ctx, userID, oldAccessExp)
+	if err != nil {
+		return nil, fmt.Errorf("[Refresh] invalidate access token:%w", err)
+	}
+
+	err = s.redisManager.InvalidateToken(ctx, userID, oldRefreshExp)
+	if err != nil {
+		return nil, fmt.Errorf("[Refresh] invalidate refresh token:%w", err)
 	}
 
 	return &models.UserTokens{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
+}
+
+func (s *GatewayService) InvalidateTokensForUser(ctx context.Context, userID int) error {
+	return s.redisManager.InvalidateTokensForUser(ctx, userID)
+}
+
+func (s *GatewayService) InvalidateToken(ctx context.Context, userID int, access, refresh string) error {
+	userID, accessExp, err := s.jwtUtil.VerifyToken(access)
+	if err != nil {
+		return fmt.Errorf("[InvalidateToken] verify access: %w", err)
+	}
+
+	userID, refreshExp, err := s.jwtUtil.VerifyToken(refresh)
+	if err != nil {
+		return fmt.Errorf("[InvalidateToken] verify refresh: %w", err)
+	}
+
+	err = s.redisManager.InvalidateToken(ctx, userID, accessExp)
+	if err != nil {
+		return fmt.Errorf("[InvalidateToken] invalidate access: %w", err)
+	}
+
+	err = s.redisManager.InvalidateToken(ctx, userID, refreshExp)
+	if err != nil {
+		return fmt.Errorf("[InvalidateToken] invalidate refresh: %w", err)
+	}
+
+	return nil
 }

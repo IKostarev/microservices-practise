@@ -1,0 +1,8 @@
+### Send POST request with json body
+POST {{host}}/invalidate-token/1
+Authorization: Bearer {{access_token}}
+
+{
+  "refresh_token": "{{refresh_token}}",
+  "access_token": "{{access_token}}"
+}

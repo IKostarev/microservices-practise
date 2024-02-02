@@ -44,7 +44,7 @@ func (h *GatewayHandler) GetToDoHandler(w http.ResponseWriter, r *http.Request) 
 
 	todo, err := h.gatewayService.GetToDo(ctx, id)
 	if err != nil {
-		if errors.As(err, &app_errors.ErrNotFound) {
+		if errors.Is(err, app_errors.ErrNotFound) {
 			h.ErrorNotFound(w)
 			return
 		}
@@ -95,7 +95,7 @@ func (h *GatewayHandler) UpdateToDoHandler(w http.ResponseWriter, r *http.Reques
 
 	updatedTodo, err := h.gatewayService.UpdateToDo(ctx, todo)
 	if err != nil {
-		if errors.As(err, &app_errors.ErrNotFound) {
+		if errors.Is(err, app_errors.ErrNotFound) {
 			h.ErrorNotFound(w)
 			return
 		}
@@ -120,7 +120,7 @@ func (h *GatewayHandler) DeleteToDoHandler(w http.ResponseWriter, r *http.Reques
 
 	err = h.gatewayService.DeleteToDo(ctx, id)
 	if err != nil {
-		if errors.As(err, &app_errors.ErrNotFound) {
+		if errors.Is(err, app_errors.ErrNotFound) {
 			h.ErrorNotFound(w)
 			return
 		}

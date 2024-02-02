@@ -4,15 +4,29 @@ import (
 	"fmt"
 	"gateway/config"
 	rest "gateway/internal/api"
+	_ "gateway/internal/api/docs"
+	"gateway/pkg/redis"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
+	"net/http/pprof"
 )
 
+// @title           ToDo Gateway API
+// @version         1.0
+// @description     This service is Gateway API for all microservices of ToDo service
+// @host            localhost:3000
+// @BasePath        /api
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func RunREST(
 	cfg *config.Config,
 	logger *zerolog.Logger,
 	gatewayService rest.GatewayService,
+	redisManager *redis.RedisManager,
 ) error {
 	gatewayHandler := NewGatewayHandler(logger, gatewayService)
 
@@ -21,20 +35,40 @@ func RunREST(
 		ValidateTokenMiddleware(
 			&cfg.JWT,
 			[]string{
+				"/debug/pprof",
+				"/docs/swagger",
 				"/api/v1/users/login",
+				"/api/v1/users/refresh",
 				"/api/v1/users/register",
 			},
+			redisManager,
 		),
 	)
 
+	router.PathPrefix("/docs/swagger").Handler(httpSwagger.WrapHandler)
+
+	debugRouter := router.PathPrefix("/debug/pprof").Subrouter()
+
+	debugRouter.HandleFunc("/", pprof.Index).Methods(http.MethodGet)
+	debugRouter.HandleFunc("/cmdline", pprof.Cmdline).Methods(http.MethodGet)
+	debugRouter.HandleFunc("/profile", pprof.Profile).Methods(http.MethodGet)
+	debugRouter.HandleFunc("/symbol", pprof.Symbol).Methods(http.MethodGet)
+	debugRouter.HandleFunc("/trace", pprof.Trace).Methods(http.MethodGet)
+	debugRouter.Handle("/goroutine", pprof.Handler("goroutine")).Methods(http.MethodGet)
+	debugRouter.Handle("/heap", pprof.Handler("heap")).Methods(http.MethodGet)
+	debugRouter.Handle("/threadcreate", pprof.Handler("threadcreate")).Methods(http.MethodGet)
+	debugRouter.Handle("/block", pprof.Handler("block")).Methods(http.MethodGet)
+
 	usersV1Router := router.PathPrefix("/api/v1/users").Subrouter()
 	usersV1Router.HandleFunc("/register", gatewayHandler.RegisterUser).Methods(http.MethodPost)
-	usersV1Router.HandleFunc("/{id:[0-9]+}", gatewayHandler.GetGetUserById).Methods(http.MethodGet)
+	usersV1Router.HandleFunc("/{id:[0-9]+}", gatewayHandler.GetUserById).Methods(http.MethodGet)
 	usersV1Router.HandleFunc("/update", gatewayHandler.UpdateUser).Methods(http.MethodPut)
 	usersV1Router.HandleFunc("/update-password", gatewayHandler.UpdatePassword).Methods(http.MethodPut)
 	usersV1Router.HandleFunc("/delete/{id:[0-9]+}", gatewayHandler.DeleteUser).Methods(http.MethodDelete)
 	usersV1Router.HandleFunc("/login", gatewayHandler.UserLogin).Methods(http.MethodPost)
 	usersV1Router.HandleFunc("/refresh", gatewayHandler.Refresh).Methods(http.MethodPost)
+	usersV1Router.HandleFunc("/invalidate-tokens/{user_id}", gatewayHandler.InvalidateTokensForUser).Methods(http.MethodPost)
+	usersV1Router.HandleFunc("/invalidate-token/{user_id}", gatewayHandler.InvalidateToken).Methods(http.MethodPost)
 
 	todosV1Router := router.PathPrefix("/api/v1/todos").Subrouter()
 	todosV1Router.HandleFunc("/", gatewayHandler.CreateToDoHandler).Methods(http.MethodPost)

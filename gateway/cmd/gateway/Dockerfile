@@ -18,6 +18,10 @@ ENV USERS_GRPC_PORT=50000
 ENV JAEGER_HOST=jaeger:6831
 ENV JAEGER_LOG_SPANS=true
 
+ENV REDIS_ADDRES=redis:6379
+ENV REDIS_PASSWORD=redisPassword
+ENV REDIS_JWTDB=0
+
 # копируем файлы приложения в рабочую папку образа
 COPY app /build/app
 COPY cmd /build/cmd
@@ -28,12 +32,18 @@ COPY pkg /build/pkg
 COPY go.mod /build/
 COPY go.sum /build/
 
+
+# скачиваем зависимости приложения
+RUN go mod download
+
+# запускаем тесты
+RUN go test ./...
+
 # запускаем в образе команды
 # скачиваем зависимости приложения
 # собирвем приложение
 # делаем бинарный файл исполняемым
-RUN go mod download && \
-    go build -o cmd/gateway/gateway ./cmd/gateway/main.go && \
+RUN go build -o cmd/gateway/gateway ./cmd/gateway/main.go && \
     chmod +x cmd/gateway/gateway
 
 # указываем бинарный файл

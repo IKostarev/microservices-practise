@@ -11,6 +11,15 @@ import (
 	"strconv"
 )
 
+// CreateToDoHandler godoc
+// @Summary Create a new todo
+// @Description This endpoint creates a new todo in the system.
+// @Tags todo, v1
+// @Accept json
+// @Produce json
+// @Param newTodo body models.CreateTodoDTO true "New Todo"
+// @Success 200 {object} map[string]int "todo_id"
+// @Router /v1/todos [post]
 func (h *GatewayHandler) CreateToDoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -31,6 +40,15 @@ func (h *GatewayHandler) CreateToDoHandler(w http.ResponseWriter, r *http.Reques
 	h.JSONSuccessRespond(w, createdTodo)
 }
 
+// GetToDoHandler godoc
+// @Summary Get todo by ID
+// @Description Retrieves todo details by their unique ID.
+// @Tags todo, v1
+// @Accept json
+// @Produce json
+// @Param id path int true "Todo ID"
+// @Success 200 {object} models.TodoDTO
+// @Route /v1/todos/{id} [get]
 func (h *GatewayHandler) GetToDoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -56,6 +74,15 @@ func (h *GatewayHandler) GetToDoHandler(w http.ResponseWriter, r *http.Request) 
 	h.JSONSuccessRespond(w, todo)
 }
 
+// GetToDosHandler godoc
+// @Summary Get todos by ID
+// @Description Retrieves todos details by their unique ID.
+// @Tags todo, v1
+// @Accept json
+// @Produce json
+// @Param id path int true "Todos ID"
+// @Success 200 {object} models.TodoDTO
+// @Route /v1/todos/batch [get]
 func (h *GatewayHandler) GetToDosHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -76,6 +103,15 @@ func (h *GatewayHandler) GetToDosHandler(w http.ResponseWriter, r *http.Request)
 	h.JSONSuccessRespond(w, todos)
 }
 
+// UpdateToDoHandler godoc
+// @Summary Update todo information
+// @Description Updates the information of an existing todo.
+// @Tags todo, v1
+// @Accept json
+// @Produce json
+// @Param updateTodo body models.UpdateTodoDTO true "Update ToDo"
+// @Success 200
+// @Router /v1/todos/{id} [put]
 func (h *GatewayHandler) UpdateToDoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -108,6 +144,15 @@ func (h *GatewayHandler) UpdateToDoHandler(w http.ResponseWriter, r *http.Reques
 	h.JSONSuccessRespond(w, updatedTodo)
 }
 
+// DeleteToDoHandler godoc
+// @Summary Delete a todo
+// @Description Deletes a todo from the system based on their ID.
+// @Tags todo, v1
+// @Accept json
+// @Produce json
+// @Param id path int true "Todo ID"
+// @Success 200
+// @Router /v1/todos/{id} [delete]
 func (h *GatewayHandler) DeleteToDoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

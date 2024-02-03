@@ -1,5 +1,24 @@
 basePath: /api
 definitions:
+  models.CreateTodoDTO:
+    properties:
+      assignee:
+        example: 2
+        type: integer
+      created_at:
+        type: string
+      created_by:
+        example: 1
+        type: integer
+      description:
+        example: todo description
+        type: string
+      id:
+        example: c0e708fa-a7df-4d9f-a1b8-a3bfe63c433c
+        type: string
+      updated_at:
+        type: string
+    type: object
   models.CreateUserDTO:
     properties:
       email:
@@ -17,6 +36,42 @@ definitions:
       username:
         example: username
         type: string
+    type: object
+  models.TodoDTO:
+    properties:
+      assignee:
+        example: 2
+        type: integer
+      created_at:
+        type: string
+      created_by:
+        example: 1
+        type: integer
+      description:
+        example: todo description
+        type: string
+      id:
+        example: c0e708fa-a7df-4d9f-a1b8-a3bfe63c433c
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.UpdateTodoDTO:
+    properties:
+      assignee:
+        example: 2
+        type: integer
+      description:
+        example: todo description
+        type: string
+      id:
+        example: c0e708fa-a7df-4d9f-a1b8-a3bfe63c433c
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        example: 1
+        type: integer
     type: object
   models.UpdateUserPasswordDTO:
     properties:
@@ -71,6 +126,71 @@ info:
   title: ToDo Gateway API
   version: "1.0"
 paths:
+  /v1/todos:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates a new todo in the system.
+      parameters:
+      - description: New Todo
+        in: body
+        name: newTodo
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateTodoDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: todo_id
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+      summary: Create a new todo
+      tags:
+      - todo
+      - v1
+  /v1/todos/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a todo from the system based on their ID.
+      parameters:
+      - description: Todo ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Delete a todo
+      tags:
+      - todo
+      - v1
+    put:
+      consumes:
+      - application/json
+      description: Updates the information of an existing todo.
+      parameters:
+      - description: Update ToDo
+        in: body
+        name: updateTodo
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateTodoDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Update todo information
+      tags:
+      - todo
+      - v1
   /v1/users/{id}:
     get:
       consumes:
@@ -110,6 +230,55 @@ paths:
         "200":
           description: OK
       summary: Delete a user
+      tags:
+      - users
+      - v1
+  /v1/users/invalidate-token/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Invalidates a specific token for a user.
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      - description: Token ID
+        in: path
+        name: token_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token invalidated successfully
+          schema:
+            type: string
+      summary: Invalidate a specific token for a user
+      tags:
+      - users
+      - v1
+  /v1/users/invalidate-tokens/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Invalidates all tokens for a user.
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tokens invalidated successfully
+          schema:
+            type: string
+      summary: Invalidate all tokens for a user
       tags:
       - users
       - v1

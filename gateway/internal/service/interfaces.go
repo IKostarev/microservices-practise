@@ -5,6 +5,7 @@ import (
 	"gateway/internal/models"
 )
 
+//go:generate mockgen --build_flags=-mod=mod -destination=./mocks/todos_client.go -package=mocks gateway/internal/service TodoServiceClient
 type TodoServiceClient interface {
 	CreateToDo(ctx context.Context, newTodo *models.CreateTodoDTO) (int, error)
 	UpdateToDo(ctx context.Context, updateTodo *models.UpdateTodoDTO) (int, error)

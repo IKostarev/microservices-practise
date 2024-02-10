@@ -11,11 +11,13 @@ import (
 
 type Mocks struct {
 	UsersServiceClient *mocks.MockUsersServiceClient
+	TodoServiceClient  *mocks.MockTodoServiceClient
 }
 
 func getMocks(ctrl *gomock.Controller) *Mocks {
 	return &Mocks{
 		UsersServiceClient: mocks.NewMockUsersServiceClient(ctrl),
+		TodoServiceClient:  mocks.NewMockTodoServiceClient(ctrl),
 	}
 }
 
@@ -26,7 +28,7 @@ func buildTestService(m *Mocks) *GatewayService {
 			AccessTokenExp:  100000,
 			RefreshTokenExp: 100000,
 		},
-		nil,
+		m.TodoServiceClient,
 		m.UsersServiceClient,
 		nil,
 	)

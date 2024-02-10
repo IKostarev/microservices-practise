@@ -74,6 +74,12 @@ services:
       dockerfile: ./cmd/migrations/Dockerfile
     depends_on:
       - postgres
+  migrate-todo:
+    build:
+      context: ./todo
+      dockerfile: ./cmd/migrations/Dockerfile
+    depends_on:
+      - postgres
   redis:
     image: redis:latest
     ports:

@@ -1,0 +1,2 @@
+### Send GET request with json body - get todos
+GET {{host}}/todos

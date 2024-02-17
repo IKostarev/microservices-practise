@@ -41,6 +41,16 @@ services:
     depends_on:
       - postgres
       - rabbitmq
+  todo-service:
+    build:
+      context: ./todo
+      dockerfile: ./cmd/todo/Dockerfile
+    ports:
+      - "3002:3000"
+      - "50000:50000"
+    depends_on:
+      - postgres
+      - rabbitmq
   notifications-service:
     build:
       context: ./notifications
@@ -49,12 +59,6 @@ services:
       - "465:465"
     depends_on:
       - rabbitmq
-  #  todo:
-  #    build:
-  #      context: ./todo
-  #      dockerfile: ./Dockerfile
-  #    ports:
-  #      - "3002:3002"
   postgres:
     image: postgres:15.2-alpine
     environment:
@@ -67,6 +71,12 @@ services:
   migrate-users:
     build:
       context: ./users
+      dockerfile: ./cmd/migrations/Dockerfile
+    depends_on:
+      - postgres
+  migrate-todo:
+    build:
+      context: ./todo
       dockerfile: ./cmd/migrations/Dockerfile
     depends_on:
       - postgres

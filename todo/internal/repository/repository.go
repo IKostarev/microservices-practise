@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"todo/internal/models"
 )
 
@@ -17,34 +17,34 @@ func NewTodoRepository(conn *pgxpool.Pool) *TodoRepository {
 	return &TodoRepository{conn: conn}
 }
 
-func (r *TodoRepository) CreateToDo(ctx context.Context, newTodo *models.TodoDAO) (uuid.UUID, error) {
+func (r *TodoRepository) CreateToDo(ctx context.Context, newTodo *models.CreateTodoDTO) (uuid.UUID, error) {
 	var resID uuid.UUID
 
-	sql := `INSERT INTO 
-    					todo (created_by, assignee, description, created_at, updated_at)
-			VALUES ($1, $2, $3, now(), now()) RETURNING id`
+	sql := `INSERT INTO
+	   					todo (created_by, assignee, description, created_at, updated_at)
+				VALUES ($1, $2, $3, now(), now()) RETURNING id`
 
 	err := r.conn.QueryRow(ctx, sql,
 		newTodo.CreatedBy, newTodo.Assignee, newTodo.Description, newTodo.CreatedAt, newTodo.UpdatedAt).Scan(&resID)
 
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("[CreateToDO repo] create - %w\n", err)
+		return uuid.Nil, fmt.Errorf("[CreateToDO] create todo: %w\n", err)
 	}
 
 	return resID, nil
 }
 
-func (r *TodoRepository) UpdateToDo(ctx context.Context, newTodo *models.TodoDAO) error {
+func (r *TodoRepository) UpdateToDo(ctx context.Context, updateTodo *models.TodoDAO) (uuid.UUID, error) {
 	sql := `UPDATE todo SET created_by = $1, assignee = $2, description = $3, updated_at = now() WHERE id = $5`
 
 	_, err := r.conn.Exec(ctx, sql,
-		newTodo.CreatedBy, newTodo.Assignee, newTodo.Description, newTodo.UpdatedAt, newTodo.ID)
+		updateTodo.CreatedBy, updateTodo.Assignee, updateTodo.Description, updateTodo.UpdatedAt, updateTodo.ID)
 
 	if err != nil {
-		return fmt.Errorf("[UpdateToDO repo] update -  %w\n", err)
+		return uuid.Nil, fmt.Errorf("[UpdateToDO] update todo: %w\n", err)
 	}
 
-	return nil
+	return uuid.Nil, nil
 }
 
 func (r *TodoRepository) GetToDos(ctx context.Context, todoID uuid.UUID) ([]models.TodoDAO, error) {
@@ -60,12 +60,12 @@ func (r *TodoRepository) GetToDos(ctx context.Context, todoID uuid.UUID) ([]mode
 
 	sql, args, err := queryBuilder.PlaceholderFormat(squirrel.Dollar).ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("[GetToDos repo] place holder formater - %w\n", err)
+		return nil, fmt.Errorf("[GetToDos] place holder formater - %w\n", err)
 	}
 
 	rows, err := r.conn.Query(ctx, sql, args...)
 	if err != nil {
-		return nil, fmt.Errorf("[GetToDos repo] get todos - %w\n", err)
+		return nil, fmt.Errorf("[GetToDos] get todos - %w\n", err)
 	}
 
 	for rows.Next() {
@@ -80,7 +80,7 @@ func (r *TodoRepository) GetToDos(ctx context.Context, todoID uuid.UUID) ([]mode
 			&dao.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("[GetToDos repo] get todos - %w\n", err)
+			return nil, fmt.Errorf("[GetToDos] get todos - %w\n", err)
 		}
 
 		res = append(res, dao)
@@ -93,11 +93,11 @@ func (r *TodoRepository) GetToDo(ctx context.Context, todoID uuid.UUID) (*models
 	var dao models.TodoDAO
 
 	sql := `SELECT
-				id, created_by, assignee, description, created_at, updated_at
-			FROM
-				todo
-			WHERE
-			    id = $1`
+					id, created_by, assignee, description, created_at, updated_at
+				FROM
+					todo
+				WHERE
+				    id = $1`
 
 	err := r.conn.QueryRow(ctx, sql, todoID).
 		Scan(
@@ -109,7 +109,7 @@ func (r *TodoRepository) GetToDo(ctx context.Context, todoID uuid.UUID) (*models
 			&dao.UpdatedAt,
 		)
 	if err != nil {
-		return nil, fmt.Errorf("[GetToDo repo] get todo -  %w\n", err)
+		return nil, fmt.Errorf("[GetToDo] get todo -  %w\n", err)
 	}
 
 	return &dao, nil
@@ -118,7 +118,7 @@ func (r *TodoRepository) GetToDo(ctx context.Context, todoID uuid.UUID) (*models
 func (r *TodoRepository) DeleteToDo(ctx context.Context, todoID uuid.UUID) error {
 	sql := `DELETE FROM todo WHERE id = $1`
 	if _, err := r.conn.Exec(ctx, sql, todoID); err != nil {
-		return fmt.Errorf("[DeleteTodo repo] delete -  %w\n", err)
+		return fmt.Errorf("[DeleteTodo] delete todo: %w\n", err)
 	}
 
 	return nil

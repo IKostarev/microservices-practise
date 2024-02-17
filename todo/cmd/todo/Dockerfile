@@ -2,7 +2,25 @@ FROM golang:1.21
 
 WORKDIR /build
 
-ENV APP_PORT=":3000"
+ENV APP_PORT=3000
+ENV LOG_INDEX=todos
+ENV LOG_IS_DEBUG=false
+ENV LOG_TO_FILE=false
+ENV LOG_TO_FILE=false
+
+ENV POSTGRES_HOST=postgres
+ENV POSTGRES_PORT=5432
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_PASSWORD=postgres
+ENV POSTGRES_DBNAME=postgres
+
+ENV RABBITMQ_USER=notifications
+ENV RABBITMQ_PASSWORD=notifications
+ENV RABBITMQ_HOST=rabbitmq
+ENV RABBITMQ_PORT=5672
+
+ENV JAEGER_HOST=jaeger:6831
+ENV JAEGER_LOG_SPANS=true
 
 COPY app /build/app
 COPY cmd /build/cmd
@@ -14,9 +32,9 @@ COPY go.mod /build/
 COPY go.sum /build/
 
 RUN go mod download && \
-    go build -o cmd/todo ./cmd/todo/main.go && \
-    chmod +x cmd/todo
+    go build -o cmd/todo/todo ./cmd/todo/main.go && \
+    chmod +x cmd/todo/todo
 
-ENTRYPOINT ["cmd/todo"]
+ENTRYPOINT ["cmd/todo/todo"]
 
 EXPOSE 3000/tcp

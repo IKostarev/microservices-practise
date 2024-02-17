@@ -1,0 +1,2 @@
+### Send DELETE request with json body - delete todo
+DELETE {{host}}/todos/{id}

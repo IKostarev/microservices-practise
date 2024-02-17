@@ -1,0 +1,9 @@
+### Send POST request with json body - create todo
+POST {{host}}/todos
+Content-Type: application/json
+
+{
+  "created_by": 1,
+  "assignee": 1,
+  "description": "desc"
+}

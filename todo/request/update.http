@@ -1,0 +1,9 @@
+### Send PATCH request with json body - update todo
+PATCH {{host}}/todos/{id}
+Content-Type: application/json
+
+{
+  "created_by": 1,
+  "assignee": 1,
+  "description": "upd"
+}

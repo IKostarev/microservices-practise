@@ -6,6 +6,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
+	"todo/cache"
 	"todo/config"
 	"todo/internal/api"
 	"todo/internal/api/grpc"
@@ -16,6 +17,7 @@ import (
 	"todo/pkg/logging"
 	"todo/pkg/postgresql"
 	"todo/pkg/rabbitmq/producer"
+	"todo/pkg/redis"
 )
 
 type App struct {
@@ -48,7 +50,13 @@ func NewApp(
 		return nil, fmt.Errorf("start rabbit producer: %w", err)
 	}
 
-	todoService := service.NewTodoService(todoRepo, todosProducer)
+	redisManager, err := redis.NewRedisManager(cfg.RedisConfig)
+	if err != nil {
+		return nil, fmt.Errorf("start redis manager: %w", err)
+	}
+
+	todoRedis := cache.NewTodoRedisManager(redisManager, cfg.App.AppCacheTTL)
+	todoService := service.NewTodoService(todoRepo, todosProducer, todoRedis)
 
 	return &App{
 		cfg:         cfg,

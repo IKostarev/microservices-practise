@@ -19,3 +19,10 @@ type TodoRepository interface {
 type RabbitProducer interface {
 	Publish(data []byte, reqesID string) (err error)
 }
+
+//go:generate mockgen --build_flags=-mod=mod -destination=./mocks/todo_redis_manager.go -package=mocks todo/internal/service TodoRedisManager
+type TodoRedisManager interface {
+	GetCacheByTodoID(ctx context.Context, todoID uuid.UUID) (*models.TodoDAO, error)
+	StoreCache(ctx context.Context, todo *models.TodoDAO)
+	FlushCache(ctx context.Context, todoID uuid.UUID)
+}

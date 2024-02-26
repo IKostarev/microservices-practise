@@ -22,6 +22,10 @@ ENV RABBITMQ_PORT=5672
 ENV JAEGER_HOST=jaeger:6831
 ENV JAEGER_LOG_SPANS=true
 
+ENV REDIS_ADDRES=redis:6379
+ENV REDIS_PASSWORD=password
+ENV REDIS_DB=2
+
 COPY app /build/app
 COPY cmd /build/cmd
 COPY config /build/config

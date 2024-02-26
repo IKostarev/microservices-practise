@@ -5,21 +5,25 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
+	"strconv"
 	"todo/internal/models"
 )
 
 type TodoService struct {
 	todoRepo           TodoRepository
 	todoRabbitProducer RabbitProducer
+	todoRedis          TodoRedisManager
 }
 
 func NewTodoService(
 	todoRepo TodoRepository,
 	todoRabbitProducer RabbitProducer,
+	todoRedis TodoRedisManager,
 ) *TodoService {
 	return &TodoService{
 		todoRepo:           todoRepo,
 		todoRabbitProducer: todoRabbitProducer,
+		todoRedis:          todoRedis,
 	}
 }
 
@@ -31,6 +35,8 @@ func (t *TodoService) CreateToDo(ctx context.Context, newTodo *models.CreateTodo
 	if err != nil {
 		return 0, fmt.Errorf("[CreateToDo] store user:%w", err)
 	}
+
+	t.todoRedis.StoreCache(ctx, (*models.TodoDAO)(newTodo))
 
 	return int(todoID.ID()), nil
 }
@@ -46,10 +52,17 @@ func (t *TodoService) UpdateToDo(ctx context.Context, updateTodo *models.UpdateT
 		UpdatedAt:   updateTodo.UpdatedAt,
 	}
 
+	extTodo, err := t.todoRedis.GetCacheByTodoID(ctx, updateTodo.ID)
+	if err != nil {
+		return 0, err
+	}
+
 	todoID, err := t.todoRepo.UpdateToDo(ctx, upd)
 	if err != nil {
 		return 0, fmt.Errorf("[UpdateToDo] update todo:%w", err)
 	}
+
+	t.todoRedis.StoreCache(ctx, extTodo)
 
 	return int(todoID.ID()), nil
 }
@@ -70,22 +83,30 @@ func (t *TodoService) GetToDo(ctx context.Context, todoID int) (*models.TodoDTO,
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetTodo")
 	defer span.Finish()
 
-	todo, err := t.todoRepo.GetToDo(ctx, uuid.New())
+	getTodo, err := t.todoRedis.GetCacheByTodoID(ctx, uuid.MustParse(strconv.Itoa(todoID)))
 	if err != nil {
-		return nil, fmt.Errorf("[GetToDo] get todo:%w", err)
+		getTodo, err = t.todoRepo.GetToDo(ctx, uuid.New())
+		if err != nil {
+			return nil, fmt.Errorf("[GetToDo] get todo:%w", err)
+		}
 	}
 
-	return (*models.TodoDTO)(todo), nil
+	return (*models.TodoDTO)(getTodo), nil
 }
 
 func (t *TodoService) DeleteToDo(ctx context.Context, todoID int) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.DeleteToDo")
 	defer span.Finish()
 
-	err := t.todoRepo.DeleteToDo(ctx, uuid.New()) // TODO fix
+	_, err := t.todoRedis.GetCacheByTodoID(ctx, uuid.MustParse(strconv.Itoa(todoID)))
 	if err != nil {
-		return fmt.Errorf("[DeleteToDo] delete todo:%w", err)
+		err = t.todoRepo.DeleteToDo(ctx, uuid.New()) // TODO fix
+		if err != nil {
+			return fmt.Errorf("[DeleteToDo] delete todo:%w", err)
+		}
 	}
+
+	t.todoRedis.FlushCache(ctx, uuid.MustParse(strconv.Itoa(todoID)))
 
 	return nil
 }
